@@ -93,7 +93,6 @@ CREATE TABLE Autopartes(
 CREATE TABLE Compras_autopartes(
    compra_autopartes_numero decimal(18,0) PRIMARY KEY,
    compra_autopartes_fecha datetime2(3),
-   compra_autopartes_precio decimal(18,2),
    compra_autopartes_sucursal int FOREIGN KEY REFERENCES Sucursales(sucursal_id),
    compra_autopartes_cliente int FOREIGN KEY REFERENCES Clientes(cliente_id)
 )
@@ -101,14 +100,14 @@ CREATE TABLE Compras_autopartes(
 CREATE TABLE Compra_X_autoparte(
 	compra_autopartes decimal(18,0) FOREIGN KEY REFERENCES Compras_autopartes(compra_autopartes_numero),
 	autoparte decimal(18,0) FOREIGN KEY REFERENCES Autopartes(autoparte_codigo),
-	cantidad decimal(18,0)
-	PRIMARY KEY(compra_autopartes,autoparte)
+	cantidad decimal(18,0),
+	precio decimal(18,2)
+	--PRIMARY KEY(compra_autopartes,autoparte)
 )
 
 CREATE TABLE Facturas_autopartes(
 	factura_autopartes_numero decimal(18,0) PRIMARY KEY,
 	factura_autopartes_fecha datetime2(3),
-	factura_autopartes_precio decimal(18,2),
 	factura_autopartes_sucursal int FOREIGN KEY REFERENCES Sucursales(sucursal_id),
 	factura_autopartes_cliente int FOREIGN KEY REFERENCES Clientes(cliente_id),
 )
@@ -116,8 +115,9 @@ CREATE TABLE Facturas_autopartes(
 CREATE TABLE Factura_X_autoparte(
 	factura_autopartes decimal(18,0) FOREIGN KEY REFERENCES Facturas_autopartes(factura_autopartes_numero),
 	autoparte decimal(18,0) FOREIGN KEY REFERENCES Autopartes(autoparte_codigo),
-	cantidad decimal(18,0)
-	PRIMARY KEY(factura_autopartes,autoparte)
+	cantidad decimal(18,0),
+	precio decimal(18,2)
+	--PRIMARY KEY(factura_autopartes,autoparte)
 )
 
 CREATE TABLE Compras_automoviles(
@@ -223,4 +223,49 @@ WHERE COMPRA_NRO IS NOT NULL
 --
 
 
+-- Datos de facturas automoviles
+INSERT INTO Facturas_automoviles
+SELECT DISTINCT FACTURA_NRO, FACTURA_FECHA, PRECIO_FACTURADO, sucursal_id, automovil_id, cliente_id
+FROM GD2C2020.gd_esquema.Maestra
+INNER JOIN Migracion.dbo.Sucursales ON Migracion.dbo.Sucursales.sucursal_direccion = GD2C2020.gd_esquema.Maestra.FAC_SUCURSAL_DIRECCION
+INNER JOIN Migracion.dbo.Automoviles ON Migracion.dbo.Automoviles.automovil_patente = GD2C2020.gd_esquema.Maestra.AUTO_PATENTE
+INNER JOIN Migracion.dbo.Clientes ON Migracion.dbo.Clientes.cliente_dni = GD2C2020.gd_esquema.Maestra.FAC_CLIENTE_DNI
+								  AND Migracion.dbo.Clientes.cliente_direccion = GD2C2020.gd_esquema.Maestra.FAC_CLIENTE_DIRECCION
+WHERE FACTURA_NRO IS NOT NULL 
+--
 
+-- Datos de compras autopartes
+INSERT INTO Compras_autopartes
+SELECT DISTINCT COMPRA_NRO, COMPRA_FECHA, sucursal_id, cliente_id
+FROM GD2C2020.gd_esquema.Maestra
+INNER JOIN Migracion.dbo.Sucursales ON Migracion.dbo.Sucursales.sucursal_direccion = GD2C2020.gd_esquema.Maestra.SUCURSAL_DIRECCION
+INNER JOIN Migracion.dbo.Clientes ON Migracion.dbo.Clientes.cliente_dni = GD2C2020.gd_esquema.Maestra.CLIENTE_DNI
+								  AND Migracion.dbo.Clientes.cliente_direccion = GD2C2020.gd_esquema.Maestra.CLIENTE_DIRECCION
+WHERE COMPRA_NRO IS NOT NULL AND AUTO_PARTE_CODIGO IS NOT NULL
+--127131
+
+
+-- Datos de facturas autopartes
+INSERT INTO Facturas_autopartes
+SELECT DISTINCT FACTURA_NRO, FACTURA_FECHA, sucursal_id, cliente_id
+FROM GD2C2020.gd_esquema.Maestra
+INNER JOIN Migracion.dbo.Sucursales ON Migracion.dbo.Sucursales.sucursal_direccion = GD2C2020.gd_esquema.Maestra.FAC_SUCURSAL_DIRECCION
+INNER JOIN Migracion.dbo.Clientes ON Migracion.dbo.Clientes.cliente_dni = GD2C2020.gd_esquema.Maestra.FAC_CLIENTE_DNI
+								  AND Migracion.dbo.Clientes.cliente_direccion = GD2C2020.gd_esquema.Maestra.FAC_CLIENTE_DIRECCION
+WHERE FACTURA_NRO IS NOT NULL AND AUTO_PARTE_CODIGO IS NOT NULL
+--
+
+
+-- Datos de compras x autopartes
+INSERT INTO Compra_X_autoparte
+SELECT COMPRA_NRO, AUTO_PARTE_CODIGO, COMPRA_CANT, COMPRA_PRECIO
+FROM GD2C2020.gd_esquema.Maestra
+WHERE COMPRA_NRO IS NOT NULL AND AUTO_PARTE_CODIGO IS NOT NULL
+--
+
+-- Datos de factura x autopartes
+INSERT INTO Factura_X_autoparte
+SELECT FACTURA_NRO, AUTO_PARTE_CODIGO, CANT_FACTURADA, PRECIO_FACTURADO
+FROM GD2C2020.gd_esquema.Maestra
+WHERE FACTURA_NRO IS NOT NULL AND AUTO_PARTE_CODIGO IS NOT NULL
+--

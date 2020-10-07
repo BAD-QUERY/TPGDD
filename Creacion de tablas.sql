@@ -44,6 +44,7 @@ CREATE TABLE Sucursales (
 	sucursal_direccion nvarchar(255),
 	sucursal_ciudad nvarchar(255),
 	sucursal_telefono decimal(18,0),
+	sucursal_mail nvarchar(255)
 ) 
 
 CREATE TABLE Tipos_auto (
@@ -66,7 +67,7 @@ CREATE TABLE Modelos (
 	modelo_nombre nvarchar(255),
 	modelo_potencia decimal(18,0),
 	modelo_tipo_motor decimal(18,0),
-	autoparte_fabricante nvarchar(255),
+	modelo_fabricante nvarchar(255),
 	modelo_tipo_auto decimal(18,0) FOREIGN KEY REFERENCES Tipos_auto(tipo_auto_codigo),
 	modelo_tipo_caja decimal(18,0) FOREIGN KEY REFERENCES Tipos_caja(tipo_caja_codigo), 
 	modelo_tipo_transmision decimal(18,0) FOREIGN KEY REFERENCES Tipos_transmision(tipo_transmision_codigo)
@@ -85,8 +86,8 @@ CREATE TABLE Automoviles (
 CREATE TABLE Autopartes(
 	autoparte_codigo decimal(18,0) PRIMARY KEY,
 	autoparte_descripcion nvarchar(255),
+	autoparte_modelo_auto decimal(18,0) FOREIGN KEY REFERENCES Modelos(modelo_codigo),
 	autoparte_categoria nvarchar(255),
-	autoparte_modelo_auto decimal(18,0) FOREIGN KEY REFERENCES Modelos(modelo_codigo)
 )
 
 CREATE TABLE Compras_autopartes(
@@ -138,10 +139,9 @@ CREATE TABLE Facturas_automoviles(
 )
 GO
 
-
 -- Datos de clientes
 INSERT INTO Clientes
-SELECT DISTINCT CLIENTE_NOMBRE, CLIENTE_APELLIDO, CLIENTE_DIRECCION, CLIENTE_DNI, CLIENTE_FECHA_NAC,CLIENTE_MAIL
+SELECT DISTINCT CLIENTE_NOMBRE, CLIENTE_APELLIDO, CLIENTE_DIRECCION, CLIENTE_DNI, CLIENTE_FECHA_NAC, CLIENTE_MAIL
 FROM GD2C2020.gd_esquema.Maestra
 WHERE CLIENTE_APELLIDO IS NOT NULL
 
@@ -149,6 +149,77 @@ INSERT INTO Clientes
 SELECT DISTINCT FAC_CLIENTE_NOMBRE, FAC_CLIENTE_APELLIDO, FAC_CLIENTE_DIRECCION, FAC_CLIENTE_DNI, FAC_CLIENTE_FECHA_NAC, FAC_CLIENTE_MAIL
 FROM GD2C2020.gd_esquema.Maestra
 WHERE FAC_CLIENTE_DNI IS NOT NULL AND FAC_CLIENTE_DNI NOT IN (SELECT cliente_dni FROM Clientes)
+--
+
+
+-- Datos de sucursales
+INSERT INTO Sucursales
+SELECT DISTINCT SUCURSAL_DIRECCION, SUCURSAL_CIUDAD, SUCURSAL_TELEFONO,SUCURSAL_MAIL
+FROM GD2C2020.gd_esquema.Maestra
+WHERE SUCURSAL_DIRECCION IS NOT NULL
+
+INSERT INTO Sucursales
+SELECT DISTINCT FAC_SUCURSAL_DIRECCION, FAC_SUCURSAL_CIUDAD, FAC_SUCURSAL_TELEFONO,SUCURSAL_MAIL
+FROM GD2C2020.gd_esquema.Maestra
+WHERE FAC_SUCURSAL_DIRECCION IS NOT NULL AND FAC_SUCURSAL_DIRECCION NOT IN (SELECT sucursal_direccion FROM Sucursales)
+--
+
+-- Datos de tipo auto
+INSERT INTO Tipos_auto
+SELECT DISTINCT TIPO_AUTO_CODIGO, TIPO_AUTO_DESC
+FROM GD2C2020.gd_esquema.Maestra
+WHERE TIPO_AUTO_CODIGO IS NOT NULL
+--
+
+-- Datos de tipo caja
+INSERT INTO Tipos_caja
+SELECT DISTINCT TIPO_CAJA_CODIGO, TIPO_CAJA_DESC
+FROM GD2C2020.gd_esquema.Maestra
+WHERE TIPO_CAJA_CODIGO IS NOT NULL
+--
+
+-- Datos de tipo transmision
+INSERT INTO Tipos_transmision
+SELECT DISTINCT TIPO_TRANSMISION_CODIGO, TIPO_TRANSMISION_DESC
+FROM GD2C2020.gd_esquema.Maestra
+WHERE TIPO_TRANSMISION_CODIGO IS NOT NULL
+--
+
+-- Datos de modelo
+INSERT INTO Modelos
+SELECT DISTINCT MODELO_CODIGO, MODELO_NOMBRE, MODELO_POTENCIA, TIPO_MOTOR_CODIGO, FABRICANTE_NOMBRE, TIPO_AUTO_CODIGO, TIPO_CAJA_CODIGO, TIPO_TRANSMISION_CODIGO
+FROM GD2C2020.gd_esquema.Maestra
+WHERE MODELO_CODIGO IS NOT NULL 
+AND TIPO_MOTOR_CODIGO IS NOT NULL 
+AND TIPO_AUTO_CODIGO IS NOT NULL
+AND TIPO_CAJA_CODIGO IS NOT NULL
+AND TIPO_TRANSMISION_CODIGO IS NOT NULL
+--
+
+-- Datos de autoparte
+INSERT INTO Autopartes
+SELECT DISTINCT AUTO_PARTE_CODIGO, AUTO_PARTE_DESCRIPCION, MODELO_CODIGO, NULL 
+FROM GD2C2020.gd_esquema.Maestra
+WHERE AUTO_PARTE_CODIGO IS NOT NULL 
+--
+
+-- Datos de automoviles
+INSERT INTO Automoviles
+SELECT DISTINCT AUTO_NRO_CHASIS, AUTO_NRO_MOTOR, AUTO_PATENTE, AUTO_FECHA_ALTA, AUTO_CANT_KMS, MODELO_CODIGO
+FROM GD2C2020.gd_esquema.Maestra
+WHERE AUTO_PATENTE IS NOT NULL 
+--
+
+
+-- Datos de compras automoviles
+INSERT INTO Compras_automoviles
+SELECT DISTINCT COMPRA_NRO, COMPRA_FECHA, COMPRA_PRECIO, sucursal_id, automovil_id, cliente_id
+FROM GD2C2020.gd_esquema.Maestra
+INNER JOIN Migracion.dbo.Sucursales ON Migracion.dbo.Sucursales.sucursal_direccion = GD2C2020.gd_esquema.Maestra.SUCURSAL_DIRECCION
+INNER JOIN Migracion.dbo.Automoviles ON Migracion.dbo.Automoviles.automovil_patente = GD2C2020.gd_esquema.Maestra.AUTO_PATENTE
+INNER JOIN Migracion.dbo.Clientes ON Migracion.dbo.Clientes.cliente_dni = GD2C2020.gd_esquema.Maestra.CLIENTE_DNI
+								  AND Migracion.dbo.Clientes.cliente_direccion = GD2C2020.gd_esquema.Maestra.CLIENTE_DIRECCION
+WHERE COMPRA_NRO IS NOT NULL 
 --
 
 

@@ -1,3 +1,5 @@
+USE Migracion
+
 IF OBJECT_ID('Migracion.dbo.Compra_X_autoparte', 'U') IS NOT NULL 
   DROP TABLE Migracion.dbo.Compra_X_autoparte;
 IF OBJECT_ID('Migracion.dbo.Factura_X_autoparte', 'U') IS NOT NULL 
@@ -28,6 +30,8 @@ IF OBJECT_ID('Migracion.dbo.Tipos_caja', 'U') IS NOT NULL
   DROP TABLE Migracion.dbo.Tipos_caja;
 IF OBJECT_ID('Migracion.dbo.Tipos_transmision', 'U') IS NOT NULL 
   DROP TABLE Migracion.dbo.Tipos_transmision;
+IF OBJECT_ID('dbo.sp_migrar_datos', 'P') IS NOT NULL 
+  DROP PROCEDURE dbo.sp_migrar_datos
 
 CREATE TABLE Clientes (
 	cliente_id int IDENTITY PRIMARY KEY,
@@ -139,6 +143,10 @@ CREATE TABLE Facturas_automoviles(
 )
 GO
 
+
+CREATE PROCEDURE sp_migrar_datos
+AS
+BEGIN
 -- Datos de clientes
 INSERT INTO Clientes
 SELECT DISTINCT CLIENTE_NOMBRE, CLIENTE_APELLIDO, CLIENTE_DIRECCION, CLIENTE_DNI, CLIENTE_FECHA_NAC, CLIENTE_MAIL
@@ -150,8 +158,6 @@ SELECT DISTINCT FAC_CLIENTE_NOMBRE, FAC_CLIENTE_APELLIDO, FAC_CLIENTE_DIRECCION,
 FROM GD2C2020.gd_esquema.Maestra
 WHERE FAC_CLIENTE_DNI IS NOT NULL AND FAC_CLIENTE_DNI NOT IN (SELECT cliente_dni FROM Clientes)
 --
-
-
 -- Datos de sucursales
 INSERT INTO Sucursales
 SELECT DISTINCT SUCURSAL_DIRECCION, SUCURSAL_CIUDAD, SUCURSAL_TELEFONO,SUCURSAL_MAIL
@@ -269,3 +275,8 @@ SELECT FACTURA_NRO, AUTO_PARTE_CODIGO, CANT_FACTURADA, PRECIO_FACTURADO
 FROM GD2C2020.gd_esquema.Maestra
 WHERE FACTURA_NRO IS NOT NULL AND AUTO_PARTE_CODIGO IS NOT NULL
 --
+END
+GO
+
+
+EXECUTE dbo.sp_migrar_datos;

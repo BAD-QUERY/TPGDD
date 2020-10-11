@@ -76,6 +76,7 @@ CREATE TABLE Modelos (
 	modelo_tipo_caja decimal(18,0) FOREIGN KEY REFERENCES Tipos_caja(tipo_caja_codigo), 
 	modelo_tipo_transmision decimal(18,0) FOREIGN KEY REFERENCES Tipos_transmision(tipo_transmision_codigo)
 ) 
+CREATE INDEX indice_modelos ON Modelos(modelo_tipo_autl,modelo_tipo_caja,modelo_tipo_transmision)
 
 CREATE TABLE Automoviles (
 	automovil_id int IDENTITY PRIMARY KEY,
@@ -86,6 +87,7 @@ CREATE TABLE Automoviles (
 	automovil_cantidad_km decimal(18,0),
 	automovil_modelo decimal(18,0) FOREIGN KEY REFERENCES Modelos(modelo_codigo)
 )
+CREATE INDEX indice_automoviles ON Automoviles(automovil_modelo)
 
 CREATE TABLE Autopartes(
 	autoparte_codigo decimal(18,0) PRIMARY KEY,
@@ -93,6 +95,7 @@ CREATE TABLE Autopartes(
 	autoparte_modelo_auto decimal(18,0) FOREIGN KEY REFERENCES Modelos(modelo_codigo),
 	autoparte_categoria nvarchar(255),
 )
+CREATE INDEX indice_autopartes ON Autopartes(autoparte_modelo_auto)
 
 CREATE TABLE Compras_autopartes(
    compra_autopartes_numero decimal(18,0) PRIMARY KEY,

@@ -76,7 +76,7 @@ CREATE TABLE Modelos (
 	modelo_tipo_caja decimal(18,0) FOREIGN KEY REFERENCES Tipos_caja(tipo_caja_codigo), 
 	modelo_tipo_transmision decimal(18,0) FOREIGN KEY REFERENCES Tipos_transmision(tipo_transmision_codigo)
 ) 
-CREATE INDEX indice_modelos ON Modelos(modelo_tipo_autl,modelo_tipo_caja,modelo_tipo_transmision)
+CREATE INDEX indice_modelos ON Modelos(modelo_tipo_auto,modelo_tipo_caja,modelo_tipo_transmision)
 
 CREATE TABLE Automoviles (
 	automovil_id int IDENTITY PRIMARY KEY,

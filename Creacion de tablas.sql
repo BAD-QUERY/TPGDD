@@ -33,6 +33,8 @@ IF OBJECT_ID('Migracion.dbo.Tipos_transmision', 'U') IS NOT NULL
 IF OBJECT_ID('dbo.sp_migrar_datos', 'P') IS NOT NULL 
   DROP PROCEDURE dbo.sp_migrar_datos
 
+GO
+
 CREATE TABLE Clientes (
 	cliente_id int IDENTITY PRIMARY KEY,
 	cliente_nombre nvarchar(255),
@@ -41,7 +43,7 @@ CREATE TABLE Clientes (
 	cliente_dni decimal(18,0),
 	cliente_fecha_nacimiento datetime2(3),
 	cliente_mail nvarchar(255)
-) 
+)
 
 CREATE TABLE Sucursales (
 	sucursal_id int IDENTITY PRIMARY KEY,
@@ -50,6 +52,7 @@ CREATE TABLE Sucursales (
 	sucursal_telefono decimal(18,0),
 	sucursal_mail nvarchar(255)
 ) 
+CREATE INDEX indice_sucursales ON Sucursales(sucursal_direccion)
 
 CREATE TABLE Tipos_auto (
 	tipo_auto_codigo decimal(18,0) PRIMARY KEY,
@@ -87,7 +90,7 @@ CREATE TABLE Automoviles (
 	automovil_cantidad_km decimal(18,0),
 	automovil_modelo decimal(18,0) FOREIGN KEY REFERENCES Modelos(modelo_codigo)
 )
-CREATE INDEX indice_automoviles ON Automoviles(automovil_modelo)
+CREATE INDEX indice_automoviles ON Automoviles(automovil_patente,automovil_modelo)
 
 CREATE TABLE Autopartes(
 	autoparte_codigo decimal(18,0) PRIMARY KEY,
@@ -160,6 +163,7 @@ INSERT INTO Clientes
 SELECT DISTINCT FAC_CLIENTE_NOMBRE, FAC_CLIENTE_APELLIDO, FAC_CLIENTE_DIRECCION, FAC_CLIENTE_DNI, FAC_CLIENTE_FECHA_NAC, FAC_CLIENTE_MAIL
 FROM GD2C2020.gd_esquema.Maestra
 WHERE FAC_CLIENTE_DNI IS NOT NULL AND FAC_CLIENTE_DNI NOT IN (SELECT cliente_dni FROM Clientes)
+
 --
 -- Datos de sucursales
 INSERT INTO Sucursales

@@ -76,7 +76,8 @@ GO
 
 
 -- TODO - Agregar validación de que exista
-DROP SCHEMA BAD_QUERY  
+IF EXISTS (SELECT name FROM sys.schemas WHERE name LIKE 'BAD_QUERY')
+	DROP SCHEMA BAD_QUERY  
 GO
 
 CREATE SCHEMA BAD_QUERY

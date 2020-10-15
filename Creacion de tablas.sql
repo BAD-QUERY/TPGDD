@@ -68,6 +68,8 @@ IF OBJECT_ID('BAD_QUERY.Tipos_caja', 'U') IS NOT NULL
   DROP TABLE BAD_QUERY.Tipos_caja;
 IF OBJECT_ID('BAD_QUERY.Tipos_transmision', 'U') IS NOT NULL 
   DROP TABLE BAD_QUERY.Tipos_transmision;
+IF OBJECT_ID('BAD_QUERY.Tipos_motor', 'U') IS NOT NULL 
+  DROP TABLE BAD_QUERY.Tipos_motor;
 IF OBJECT_ID('BAD_QUERY.sp_migrar_datos', 'P') IS NOT NULL 
   DROP PROCEDURE BAD_QUERY.sp_migrar_datos
 GO
@@ -114,17 +116,23 @@ CREATE TABLE BAD_QUERY.Tipos_transmision (
 	tipo_transmision_descripcion nvarchar(255)
 ) 
 
+CREATE TABLE BAD_QUERY.Tipos_motor (
+	tipo_motor_codigo decimal(18,0) PRIMARY KEY,
+	tipo_motor_descripcion nvarchar(255)
+) 
+
 CREATE TABLE BAD_QUERY.Modelos (
 	modelo_codigo decimal(18,0) PRIMARY KEY,
 	modelo_nombre nvarchar(255),
 	modelo_potencia decimal(18,0),
-	modelo_tipo_motor decimal(18,0),
+	--modelo_tipo_motor decimal(18,0),
 	modelo_fabricante nvarchar(255),
 	modelo_tipo_auto decimal(18,0) FOREIGN KEY REFERENCES BAD_QUERY.Tipos_auto(tipo_auto_codigo),
 	modelo_tipo_caja decimal(18,0) FOREIGN KEY REFERENCES BAD_QUERY.Tipos_caja(tipo_caja_codigo), 
-	modelo_tipo_transmision decimal(18,0) FOREIGN KEY REFERENCES BAD_QUERY.Tipos_transmision(tipo_transmision_codigo)
+	modelo_tipo_transmision decimal(18,0) FOREIGN KEY REFERENCES BAD_QUERY.Tipos_transmision(tipo_transmision_codigo),
+	modelo_tipo_motor decimal(18,0) FOREIGN KEY REFERENCES BAD_QUERY.Tipos_motor(tipo_motor_codigo)
 ) 
-CREATE INDEX indice_modelos ON BAD_QUERY.Modelos(modelo_tipo_auto,modelo_tipo_caja,modelo_tipo_transmision)
+CREATE INDEX indice_modelos ON BAD_QUERY.Modelos(modelo_tipo_auto,modelo_tipo_caja,modelo_tipo_transmision,modelo_tipo_motor)
 
 CREATE TABLE BAD_QUERY.Automoviles (
 	automovil_id int IDENTITY PRIMARY KEY,
@@ -243,15 +251,22 @@ FROM GD2C2020.gd_esquema.Maestra
 WHERE TIPO_TRANSMISION_CODIGO IS NOT NULL
 --
 
+-- Datos de tipo motor
+INSERT INTO BAD_QUERY.Tipos_motor
+SELECT DISTINCT TIPO_MOTOR_CODIGO, NULL
+FROM GD2C2020.gd_esquema.Maestra
+WHERE TIPO_TRANSMISION_CODIGO IS NOT NULL
+--
+
 -- Datos de modelo
 INSERT INTO BAD_QUERY.Modelos
-SELECT DISTINCT MODELO_CODIGO, MODELO_NOMBRE, MODELO_POTENCIA, TIPO_MOTOR_CODIGO, FABRICANTE_NOMBRE, TIPO_AUTO_CODIGO, TIPO_CAJA_CODIGO, TIPO_TRANSMISION_CODIGO
+SELECT DISTINCT MODELO_CODIGO, MODELO_NOMBRE, MODELO_POTENCIA, FABRICANTE_NOMBRE, TIPO_AUTO_CODIGO, TIPO_CAJA_CODIGO, TIPO_TRANSMISION_CODIGO, TIPO_MOTOR_CODIGO
 FROM GD2C2020.gd_esquema.Maestra
 WHERE MODELO_CODIGO IS NOT NULL 
-AND TIPO_MOTOR_CODIGO IS NOT NULL 
 AND TIPO_AUTO_CODIGO IS NOT NULL
 AND TIPO_CAJA_CODIGO IS NOT NULL
 AND TIPO_TRANSMISION_CODIGO IS NOT NULL
+AND TIPO_MOTOR_CODIGO IS NOT NULL 
 --
 
 -- Datos de autoparte

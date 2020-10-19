@@ -36,8 +36,6 @@ IF OBJECT_ID('dbo.sp_migrar_datos', 'P') IS NOT NULL
 
 GO*/
 
-
-
 IF OBJECT_ID('BAD_QUERY.Compra_X_autoparte', 'U') IS NOT NULL 
   DROP TABLE BAD_QUERY.Compra_X_autoparte;
 IF OBJECT_ID('BAD_QUERY.Factura_X_autoparte', 'U') IS NOT NULL 
@@ -74,8 +72,6 @@ IF OBJECT_ID('BAD_QUERY.sp_migrar_datos', 'P') IS NOT NULL
   DROP PROCEDURE BAD_QUERY.sp_migrar_datos
 GO
 
-
--- TODO - Agregar validación de que exista
 IF EXISTS (SELECT name FROM sys.schemas WHERE name LIKE 'BAD_QUERY')
 	DROP SCHEMA BAD_QUERY  
 GO
@@ -126,7 +122,6 @@ CREATE TABLE BAD_QUERY.Modelos (
 	modelo_codigo decimal(18,0) PRIMARY KEY,
 	modelo_nombre nvarchar(255),
 	modelo_potencia decimal(18,0),
-	--modelo_tipo_motor decimal(18,0),
 	modelo_fabricante nvarchar(255),
 	modelo_tipo_auto decimal(18,0) FOREIGN KEY REFERENCES BAD_QUERY.Tipos_auto(tipo_auto_codigo),
 	modelo_tipo_caja decimal(18,0) FOREIGN KEY REFERENCES BAD_QUERY.Tipos_caja(tipo_caja_codigo), 
@@ -181,7 +176,6 @@ CREATE TABLE BAD_QUERY.Factura_X_autoparte(
 	autoparte decimal(18,0) FOREIGN KEY REFERENCES BAD_QUERY.Autopartes(autoparte_codigo),
 	cantidad decimal(18,0),
 	precio decimal(18,2)
-	--PRIMARY KEY(factura_autopartes,autoparte)
 )
 
 CREATE TABLE BAD_QUERY.Compras_automoviles(
@@ -217,18 +211,19 @@ INSERT INTO BAD_QUERY.Clientes
 SELECT DISTINCT FAC_CLIENTE_NOMBRE, FAC_CLIENTE_APELLIDO, FAC_CLIENTE_DIRECCION, FAC_CLIENTE_DNI, FAC_CLIENTE_FECHA_NAC, FAC_CLIENTE_MAIL
 FROM GD2C2020.gd_esquema.Maestra
 WHERE FAC_CLIENTE_DNI IS NOT NULL AND FAC_CLIENTE_DNI NOT IN (SELECT cliente_dni FROM BAD_QUERY.Clientes)
-
 --
+
 -- Datos de sucursales
 INSERT INTO BAD_QUERY.Sucursales
 SELECT DISTINCT SUCURSAL_DIRECCION, SUCURSAL_CIUDAD, SUCURSAL_TELEFONO,SUCURSAL_MAIL
 FROM GD2C2020.gd_esquema.Maestra
 WHERE SUCURSAL_DIRECCION IS NOT NULL
 
-INSERT INTO BAD_QUERY.Sucursales
+-- Esto se usaria para contemplar las sucursales que figuran en una factura pero no en una compra. En la base de datos este caso no se da. 
+/*INSERT INTO BAD_QUERY.Sucursales
 SELECT DISTINCT FAC_SUCURSAL_DIRECCION, FAC_SUCURSAL_CIUDAD, FAC_SUCURSAL_TELEFONO,SUCURSAL_MAIL
 FROM GD2C2020.gd_esquema.Maestra
-WHERE FAC_SUCURSAL_DIRECCION IS NOT NULL AND FAC_SUCURSAL_DIRECCION NOT IN (SELECT sucursal_direccion FROM BAD_QUERY.Sucursales)
+WHERE FAC_SUCURSAL_DIRECCION IS NOT NULL AND FAC_SUCURSAL_DIRECCION NOT IN (SELECT sucursal_direccion FROM BAD_QUERY.Sucursales)*/
 --
 
 -- Datos de tipo auto
@@ -284,7 +279,6 @@ FROM GD2C2020.gd_esquema.Maestra
 WHERE AUTO_PATENTE IS NOT NULL 
 --
 
-
 -- Datos de compras automoviles
 INSERT INTO BAD_QUERY.Compras_automoviles
 SELECT DISTINCT COMPRA_NRO, COMPRA_FECHA, COMPRA_PRECIO, sucursal_id, automovil_id, cliente_id
@@ -295,7 +289,6 @@ INNER JOIN GD2C2020.BAD_QUERY.Clientes ON GD2C2020.BAD_QUERY.Clientes.cliente_dn
 								  AND GD2C2020.BAD_QUERY.Clientes.cliente_direccion = GD2C2020.gd_esquema.Maestra.CLIENTE_DIRECCION
 WHERE COMPRA_NRO IS NOT NULL 
 --
-
 
 -- Datos de facturas automoviles
 INSERT INTO BAD_QUERY.Facturas_automoviles
@@ -316,8 +309,7 @@ INNER JOIN GD2C2020.BAD_QUERY.Sucursales ON GD2C2020.BAD_QUERY.Sucursales.sucurs
 INNER JOIN GD2C2020.BAD_QUERY.Clientes ON GD2C2020.BAD_QUERY.Clientes.cliente_dni = GD2C2020.gd_esquema.Maestra.CLIENTE_DNI
 								  AND GD2C2020.BAD_QUERY.Clientes.cliente_direccion = GD2C2020.gd_esquema.Maestra.CLIENTE_DIRECCION
 WHERE COMPRA_NRO IS NOT NULL AND AUTO_PARTE_CODIGO IS NOT NULL
---127131
-
+--
 
 -- Datos de facturas autopartes
 INSERT INTO BAD_QUERY.Facturas_autopartes
@@ -328,7 +320,6 @@ INNER JOIN GD2C2020.BAD_QUERY.Clientes ON GD2C2020.BAD_QUERY.Clientes.cliente_dn
 								  AND GD2C2020.BAD_QUERY.Clientes.cliente_direccion = GD2C2020.gd_esquema.Maestra.FAC_CLIENTE_DIRECCION
 WHERE FACTURA_NRO IS NOT NULL AND AUTO_PARTE_CODIGO IS NOT NULL
 --
-
 
 -- Datos de compras x autopartes
 INSERT INTO BAD_QUERY.Compra_X_autoparte
@@ -345,6 +336,5 @@ WHERE FACTURA_NRO IS NOT NULL AND AUTO_PARTE_CODIGO IS NOT NULL
 --
 END
 GO
-
 
 EXECUTE BAD_QUERY.sp_migrar_datos;

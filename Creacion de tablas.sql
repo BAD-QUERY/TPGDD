@@ -35,16 +35,18 @@ IF OBJECT_ID('BAD_QUERY.Tipos_motor', 'U') IS NOT NULL
   DROP TABLE BAD_QUERY.Tipos_motor;
 IF OBJECT_ID('BAD_QUERY.sp_migrar_datos', 'P') IS NOT NULL 
   DROP PROCEDURE BAD_QUERY.sp_migrar_datos
-GO
 IF OBJECT_ID('BAD_QUERY.Logs', 'U') IS NOT NULL 
   DROP TABLE BAD_QUERY.Logs;
 IF OBJECT_ID('BAD_QUERY.sp_registrar_compra_automovil', 'P') IS NOT NULL 
   DROP PROCEDURE BAD_QUERY.sp_registrar_compra_automovil
-GO
 IF OBJECT_ID('BAD_QUERY.sp_registrar_venta_automovil', 'P') IS NOT NULL 
   DROP PROCEDURE BAD_QUERY.sp_registrar_venta_automovil
-GO
-
+IF OBJECT_ID('BAD_QUERY.sp_registrar_compra_autoparte', 'P') IS NOT NULL
+  DROP PROCEDURE BAD_QUERY.sp_registrar_compra_autoparte
+IF OBJECT_ID('BAD_QUERY.sp_registrar_venta_autoparte', 'P') IS NOT NULL
+  DROP PROCEDURE BAD_QUERY.sp_registrar_venta_autoparte
+IF EXISTS(SELECT name FROM sys.objects WHERE type_desc LIKE '%fun%' AND name LIKE 'f_precio_venta')
+	DROP FUNCTION BAD_QUERY.f_precio_venta
 IF EXISTS (SELECT name FROM sys.schemas WHERE name LIKE 'BAD_QUERY')
 	DROP SCHEMA BAD_QUERY  
 GO
@@ -173,7 +175,15 @@ CREATE TABLE BAD_QUERY.Logs(
   evento varchar(255),
   fecha datetime
 )
-GO 
+GO
+
+CREATE FUNCTION BAD_QUERY.f_precio_venta(@precio_compra DECIMAL(18,0))
+RETURNS DECIMAL(18,0)
+AS
+BEGIN
+	RETURN (@precio_compra * 1.2)
+END
+GO
 
 CREATE PROCEDURE BAD_QUERY.sp_registrar_compra_automovil
 @id_sucursal int, 
@@ -206,12 +216,72 @@ CREATE PROCEDURE BAD_QUERY.sp_registrar_venta_automovil
 @numero_factura decimal(18,0)
 AS
 BEGIN
-    DECLARE @precio_automovil decimal(18,0) = (SELECT compra_automovil_precio FROM BAD_QUERY.Compras_automoviles WHERE compra_automovil_automovil = @id_automovil) * 1.2
+    DECLARE @precio_automovil decimal(18,0) = BAD_QUERY.f_precio_venta((SELECT compra_automovil_precio FROM BAD_QUERY.Compras_automoviles WHERE compra_automovil_automovil = @id_automovil))
 	
 	INSERT INTO BAD_QUERY.Facturas_automoviles(factura_automovil_numero, factura_automovil_fecha, factura_automovil_precio, factura_automovil_sucursal,
 	 factura_automovil_automovil)
 	 values(@numero_factura, GETDATE(), @precio_automovil, @id_sucursal, @id_automovil)
 
+END
+GO
+
+CREATE PROCEDURE BAD_QUERY.sp_registrar_compra_autoparte
+@codigo_autoparte INT,
+@categoria NVARCHAR(255),
+@id_modelo_automovil INT,
+@cantidad INT,
+@precio DECIMAL(18,0),
+@id_fabricante INT,
+@id_sucursal INT,
+@id_vendedor INT
+AS
+BEGIN
+	DECLARE @numero_compra DECIMAL(18,0) = (SELECT MAX(compra_autopartes_numero) FROM BAD_QUERY.Compras_autopartes) + 1
+	
+	BEGIN TRANSACTION
+	BEGIN TRY
+		INSERT INTO BAD_QUERY.Compras_autopartes VALUES(@numero_compra, CONVERT(DATETIME2(3), GETDATE()), @id_sucursal, @id_vendedor)
+		INSERT INTO BAD_QUERY.Compra_X_autoparte VALUES(@numero_compra, @codigo_autoparte, @cantidad, @precio)
+
+		COMMIT TRANSACTION
+	END TRY
+
+	BEGIN CATCH
+		ROLLBACK TRANSACTION
+	END CATCH
+END
+GO
+
+
+CREATE PROCEDURE BAD_QUERY.sp_registrar_venta_autoparte
+@ciudad NVARCHAR(255),
+@id_sucursal INT,
+@codigo_autoparte INT,
+@categoria NVARCHAR(255),
+@cantidad INT,
+@precio DECIMAL(18,0),
+@numero_factura DECIMAL(18,0),
+@fecha DATETIME2(3),
+@id_vendedor INT,
+@id_comprador INT
+AS
+BEGIN
+	DECLARE @numero_compra DECIMAL(18,0) = (SELECT MAX(compra_autopartes_numero) FROM BAD_QUERY.Compras_autopartes) + 1
+	DECLARE @precio_venta DECIMAL(18,0) = BAD_QUERY.f_precio_venta(@precio)
+	
+	BEGIN TRANSACTION
+	BEGIN TRY
+		INSERT INTO BAD_QUERY.Compras_autopartes VALUES(@numero_compra, CONVERT(DATETIME2(3), GETDATE()), @id_sucursal, @id_vendedor)
+		INSERT INTO BAD_QUERY.Compra_X_autoparte VALUES(@numero_compra, @codigo_autoparte, @cantidad, @precio)
+		INSERT INTO BAD_QUERY.Facturas_autopartes VALUES(@numero_factura, @fecha, @id_sucursal, @id_comprador)
+		INSERT INTO BAD_QUERY.Factura_X_autoparte VALUES(@numero_factura, @codigo_autoparte, @cantidad, @precio_venta)
+
+		COMMIT TRANSACTION
+	END TRY
+
+	BEGIN CATCH
+		ROLLBACK TRANSACTION
+	END CATCH
 END
 GO
 

@@ -169,6 +169,11 @@ CREATE TABLE BAD_QUERY.Facturas_automoviles(
 )
 GO
 
+CREATE TABLE BAD_QUERY.Logs(
+  evento varchar(255),
+  fecha datetime
+)
+GO 
 
 CREATE PROCEDURE BAD_QUERY.sp_registrar_compra_automovil
 @id_sucursal int, 
@@ -349,14 +354,6 @@ WHERE FACTURA_NRO IS NOT NULL AND AUTO_PARTE_CODIGO IS NOT NULL
 END
 GO
 
-
-
-
-CREATE TABLE BAD_QUERY.Logs(
-  evento varchar(255),
-  fecha datetime
-)
-GO 
 
 CREATE TRIGGER BAD_QUERY.tr_log_nuevas_compras ON BAD_QUERY.Compras_automoviles AFTER INSERT
 AS

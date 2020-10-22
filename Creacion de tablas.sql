@@ -36,8 +36,13 @@ IF OBJECT_ID('BAD_QUERY.Tipos_motor', 'U') IS NOT NULL
 IF OBJECT_ID('BAD_QUERY.sp_migrar_datos', 'P') IS NOT NULL 
   DROP PROCEDURE BAD_QUERY.sp_migrar_datos
 GO
+IF OBJECT_ID('BAD_QUERY.Logs', 'U') IS NOT NULL 
+  DROP TABLE BAD_QUERY.Logs;
 IF OBJECT_ID('BAD_QUERY.sp_registrar_compra_automovil', 'P') IS NOT NULL 
   DROP PROCEDURE BAD_QUERY.sp_registrar_compra_automovil
+GO
+IF OBJECT_ID('BAD_QUERY.sp_registrar_venta_automovil', 'P') IS NOT NULL 
+  DROP PROCEDURE BAD_QUERY.sp_registrar_venta_automovil
 GO
 
 IF EXISTS (SELECT name FROM sys.schemas WHERE name LIKE 'BAD_QUERY')
@@ -205,8 +210,6 @@ BEGIN
 END
 GO
 
-
-
 CREATE PROCEDURE BAD_QUERY.sp_migrar_datos
 AS
 BEGIN
@@ -343,6 +346,22 @@ SELECT FACTURA_NRO, AUTO_PARTE_CODIGO, CANT_FACTURADA, PRECIO_FACTURADO
 FROM GD2C2020.gd_esquema.Maestra
 WHERE FACTURA_NRO IS NOT NULL AND AUTO_PARTE_CODIGO IS NOT NULL
 --
+END
+GO
+
+
+
+
+CREATE TABLE BAD_QUERY.Logs(
+  evento varchar(255),
+  fecha datetime
+)
+GO 
+
+CREATE TRIGGER BAD_QUERY.tr_log_nuevas_compras ON BAD_QUERY.Compras_automoviles AFTER INSERT
+AS
+BEGIN
+	INSERT INTO BAD_QUERY.Logs values ('Se han agregado nuevas compras de automoviles', GETDATE())
 END
 GO
 

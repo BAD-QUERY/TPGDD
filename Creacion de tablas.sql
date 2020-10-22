@@ -228,28 +228,25 @@ GO
 
 CREATE PROCEDURE BAD_QUERY.sp_registrar_compra_autoparte
 @codigo_autoparte INT,
+@descripcion NVARCHAR(255),
 @categoria NVARCHAR(255),
 @id_modelo_automovil INT,
-@cantidad INT,
-@precio DECIMAL(18,0),
-@id_fabricante INT,
-@id_sucursal INT,
-@id_vendedor INT
+@id_sucursal INT
 AS
 BEGIN
-	DECLARE @numero_compra DECIMAL(18,0) = (SELECT MAX(compra_autopartes_numero) FROM BAD_QUERY.Compras_autopartes) + 1
-	
-	BEGIN TRANSACTION
-	BEGIN TRY
-		INSERT INTO BAD_QUERY.Compras_autopartes VALUES(@numero_compra, CONVERT(DATETIME2(3), GETDATE()), @id_sucursal, @id_vendedor)
-		INSERT INTO BAD_QUERY.Compra_X_autoparte VALUES(@numero_compra, @codigo_autoparte, @cantidad, @precio)
+	IF NOT EXISTS(SELECT autoparte_codigo FROM BAD_QUERY.Autopartes WHERE autoparte_codigo = @codigo_autoparte)
+	BEGIN
+		BEGIN TRANSACTION
+		BEGIN TRY
+			INSERT INTO BAD_QUERY.Autopartes VALUES(@codigo_autoparte, @descripcion, @id_modelo_automovil, @categoria) 
 
-		COMMIT TRANSACTION
-	END TRY
+			COMMIT TRANSACTION
+		END TRY
 
-	BEGIN CATCH
-		ROLLBACK TRANSACTION
-	END CATCH
+		BEGIN CATCH
+			ROLLBACK TRANSACTION
+		END CATCH
+	END
 END
 GO
 

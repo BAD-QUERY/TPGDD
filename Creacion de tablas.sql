@@ -173,7 +173,8 @@ GO
 
 CREATE TABLE BAD_QUERY.Logs(
   evento varchar(255),
-  fecha datetime
+  fecha datetime,
+  usuario sysname
 )
 GO
 
@@ -428,7 +429,7 @@ GO
 CREATE TRIGGER BAD_QUERY.tr_log_nuevas_compras ON BAD_QUERY.Compras_automoviles AFTER INSERT
 AS
 BEGIN
-	INSERT INTO BAD_QUERY.Logs values ('Se han agregado nuevas compras de automoviles', GETDATE())
+	INSERT INTO BAD_QUERY.Logs values ('Se han agregado nuevas compras de automoviles', GETDATE(), CURRENT_USER)
 END
 GO
 

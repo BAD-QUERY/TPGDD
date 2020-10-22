@@ -1,41 +1,6 @@
 USE GD2C2020
 GO
 
-/*IF OBJECT_ID('Migracion.dbo.Compra_X_autoparte', 'U') IS NOT NULL 
-  DROP TABLE Migracion.dbo.Compra_X_autoparte;
-IF OBJECT_ID('Migracion.dbo.Factura_X_autoparte', 'U') IS NOT NULL 
-  DROP TABLE Migracion.dbo.Factura_X_autoparte;
-IF OBJECT_ID('Migracion.dbo.Autopartes', 'U') IS NOT NULL 
-  DROP TABLE Migracion.dbo.Autopartes;
-IF OBJECT_ID('Migracion.dbo.Compras_automoviles', 'U') IS NOT NULL 
-  DROP TABLE Migracion.dbo.Compras_automoviles;
-IF OBJECT_ID('Migracion.dbo.Facturas_automoviles', 'U') IS NOT NULL 
-  DROP TABLE Migracion.dbo.Facturas_automoviles;
-IF OBJECT_ID('Migracion.dbo.Automoviles', 'U') IS NOT NULL 
-  DROP TABLE Migracion.dbo.Automoviles;
-IF OBJECT_ID('Migracion.dbo.Compras_autopartes', 'U') IS NOT NULL 
-  DROP TABLE Migracion.dbo.Compras_autopartes;
-IF OBJECT_ID('Migracion.dbo.Facturas_autopartes', 'U') IS NOT NULL 
-  DROP TABLE Migracion.dbo.Facturas_autopartes;
-IF OBJECT_ID('Migracion.dbo.Compras_automoviles', 'U') IS NOT NULL 
-  DROP TABLE Migracion.dbo.Compras_automoviles;
-IF OBJECT_ID('Migracion.dbo.Clientes', 'U') IS NOT NULL 
-  DROP TABLE Migracion.dbo.Clientes;
-IF OBJECT_ID('Migracion.dbo.Sucursales', 'U') IS NOT NULL 
-  DROP TABLE Migracion.dbo.Sucursales;
-IF OBJECT_ID('Migracion.dbo.Modelos', 'U') IS NOT NULL 
-  DROP TABLE Migracion.dbo.Modelos;
-IF OBJECT_ID('Migracion.dbo.Tipos_auto', 'U') IS NOT NULL 
-  DROP TABLE Migracion.dbo.Tipos_auto;
-IF OBJECT_ID('Migracion.dbo.Tipos_caja', 'U') IS NOT NULL 
-  DROP TABLE Migracion.dbo.Tipos_caja;
-IF OBJECT_ID('Migracion.dbo.Tipos_transmision', 'U') IS NOT NULL 
-  DROP TABLE Migracion.dbo.Tipos_transmision;
-IF OBJECT_ID('dbo.sp_migrar_datos', 'P') IS NOT NULL 
-  DROP PROCEDURE dbo.sp_migrar_datos
-
-GO*/
-
 IF OBJECT_ID('BAD_QUERY.Compra_X_autoparte', 'U') IS NOT NULL 
   DROP TABLE BAD_QUERY.Compra_X_autoparte;
 IF OBJECT_ID('BAD_QUERY.Factura_X_autoparte', 'U') IS NOT NULL 
@@ -70,6 +35,9 @@ IF OBJECT_ID('BAD_QUERY.Tipos_motor', 'U') IS NOT NULL
   DROP TABLE BAD_QUERY.Tipos_motor;
 IF OBJECT_ID('BAD_QUERY.sp_migrar_datos', 'P') IS NOT NULL 
   DROP PROCEDURE BAD_QUERY.sp_migrar_datos
+GO
+IF OBJECT_ID('BAD_QUERY.sp_registrar_compra_automovil', 'P') IS NOT NULL 
+  DROP PROCEDURE BAD_QUERY.sp_registrar_compra_automovil
 GO
 
 IF EXISTS (SELECT name FROM sys.schemas WHERE name LIKE 'BAD_QUERY')
@@ -157,11 +125,10 @@ CREATE TABLE BAD_QUERY.Compras_autopartes(
 )
 
 CREATE TABLE BAD_QUERY.Compra_X_autoparte(
-	compra_autopartes decimal(18,0) FOREIGN KEY REFERENCES BAD_QUERY.Compras_autopartes(compra_autopartes_numero),
-	autoparte decimal(18,0) FOREIGN KEY REFERENCES BAD_QUERY.Autopartes(autoparte_codigo),
-	cantidad decimal(18,0),
-	precio decimal(18,2)
-	--PRIMARY KEY(compra_autopartes,autoparte)
+	compra_autopartes decimal(18,0) NOT NULL FOREIGN KEY REFERENCES BAD_QUERY.Compras_autopartes(compra_autopartes_numero),
+	autoparte decimal(18,0) NOT NULL FOREIGN KEY REFERENCES BAD_QUERY.Autopartes(autoparte_codigo),
+	cantidad decimal(18,0) NOT NULL,
+	precio decimal(18,2) NOT NULL
 )
 
 CREATE TABLE BAD_QUERY.Facturas_autopartes(
@@ -172,10 +139,10 @@ CREATE TABLE BAD_QUERY.Facturas_autopartes(
 )
 
 CREATE TABLE BAD_QUERY.Factura_X_autoparte(
-	factura_autopartes decimal(18,0) FOREIGN KEY REFERENCES BAD_QUERY.Facturas_autopartes(factura_autopartes_numero),
-	autoparte decimal(18,0) FOREIGN KEY REFERENCES BAD_QUERY.Autopartes(autoparte_codigo),
-	cantidad decimal(18,0),
-	precio decimal(18,2)
+	factura_autopartes decimal(18,0) NOT NULL FOREIGN KEY REFERENCES BAD_QUERY.Facturas_autopartes(factura_autopartes_numero),
+	autoparte decimal(18,0) NOT NULL FOREIGN KEY REFERENCES BAD_QUERY.Autopartes(autoparte_codigo),
+	cantidad decimal(18,0) NOT NULL,
+	precio decimal(18,2) NOT NULL
 )
 
 CREATE TABLE BAD_QUERY.Compras_automoviles(
@@ -197,6 +164,30 @@ CREATE TABLE BAD_QUERY.Facturas_automoviles(
 )
 GO
 
+
+CREATE PROCEDURE BAD_QUERY.sp_registrar_compra_automovil
+@id_sucursal int, 
+@nro_chasis nvarchar(50),
+@nro_motor nvarchar(50), 
+@patente nvarchar(50), 
+@kilometraje decimal(18,0), 
+@modelo decimal(18,0),
+@numero_compra decimal(18,0),
+@fecha_alta datetime2(3),
+@precio_automovil decimal(18,0)
+AS
+BEGIN
+    DECLARE @id_automovil int 
+
+	INSERT INTO BAD_QUERY.Automoviles values (@nro_chasis, @nro_motor, @patente, @fecha_alta, @kilometraje, @modelo)
+	SELECT @id_automovil = scope_identity()
+
+	INSERT INTO BAD_QUERY.Compras_automoviles (compra_automovil_numero, compra_automovil_fecha, compra_automovil_precio, compra_automovil_sucursal,
+	 compra_automovil_automovil)
+	 values(@numero_compra, GETDATE(), @precio_automovil, @id_sucursal, @id_automovil)
+
+END
+GO
 
 CREATE PROCEDURE BAD_QUERY.sp_migrar_datos
 AS
@@ -338,3 +329,21 @@ END
 GO
 
 EXECUTE BAD_QUERY.sp_migrar_datos;
+GO
+
+--Pruebas
+/*
+EXECUTE BAD_QUERY.sp_registrar_compra_automovil
+@id_sucursal=2,
+@nro_chasis='QWERTY',
+@nro_motor='92195192', 
+@patente='AQWE-214', 
+@kilometraje=1234, 
+@modelo=15,
+@numero_compra=12345678,
+@fecha_alta = '2018-06-18 00:00:00.000',
+@precio_automovil=250000
+GO*/
+
+
+

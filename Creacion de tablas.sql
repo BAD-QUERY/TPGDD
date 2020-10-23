@@ -53,6 +53,8 @@ IF OBJECT_ID('BAD_QUERY.vw_compras_autopartes', 'V') IS NOT NULL
   DROP VIEW BAD_QUERY.vw_compras_autopartes;
 IF OBJECT_ID('BAD_QUERY.vw_facturas_autopartes', 'V') IS NOT NULL 
   DROP VIEW BAD_QUERY.vw_facturas_autopartes;
+IF OBJECT_ID('BAD_QUERY.vw_modelos_disponibles', 'V') IS NOT NULL 
+  DROP VIEW BAD_QUERY.vw_modelos_disponibles;
 IF OBJECT_ID('BAD_QUERY.sp_migrar_datos', 'P') IS NOT NULL 
   DROP PROCEDURE BAD_QUERY.sp_migrar_datos
 IF OBJECT_ID('BAD_QUERY.sp_registrar_compra_automovil', 'P') IS NOT NULL 
@@ -289,6 +291,23 @@ SUM (precio) [Precio total]
 FROM BAD_QUERY.Facturas_autopartes
 INNER JOIN BAD_QUERY.Factura_X_autoparte ON factura_autopartes_numero = factura_autopartes
 GROUP BY factura_autopartes_numero, factura_autopartes_fecha
+GO
+
+CREATE VIEW BAD_QUERY.vw_modelos_disponibles AS
+SELECT DISTINCT
+modelo_fabricante [Marca],
+modelo_nombre [Modelo],
+tipo_auto_descripcion [Tipo],
+tipo_caja_descripcion [Caja],
+tipo_motor_descripcion [Motor],
+tipo_transmision_descripcion [Transmision],
+modelo_potencia [Potencia]
+FROM BAD_QUERY.vw_automoviles_disponibles
+INNER JOIN BAD_QUERY.Modelos ON automovil_modelo = modelo_codigo
+INNER JOIN BAD_QUERY.Tipos_auto ON modelo_tipo_auto = tipo_auto_codigo 
+INNER JOIN BAD_QUERY.Tipos_caja ON modelo_tipo_caja = tipo_caja_codigo 
+INNER JOIN BAD_QUERY.Tipos_motor ON modelo_tipo_motor = tipo_motor_codigo 
+INNER JOIN BAD_QUERY.Tipos_transmision ON modelo_tipo_transmision = tipo_transmision_codigo 
 GO
 
 

@@ -37,6 +37,10 @@ IF OBJECT_ID('BAD_QUERY.sp_migrar_datos', 'P') IS NOT NULL
   DROP PROCEDURE BAD_QUERY.sp_migrar_datos
 IF OBJECT_ID('BAD_QUERY.Logs', 'U') IS NOT NULL 
   DROP TABLE BAD_QUERY.Logs;
+IF OBJECT_ID('BAD_QUERY.vw_compras_automoviles', 'V') IS NOT NULL 
+  DROP VIEW BAD_QUERY.vw_compras_automoviles;
+  IF OBJECT_ID('BAD_QUERY.vw_automoviles_disponibles', 'V') IS NOT NULL 
+  DROP VIEW BAD_QUERY.vw_automoviles_disponibles;
 IF OBJECT_ID('BAD_QUERY.sp_registrar_compra_automovil', 'P') IS NOT NULL 
   DROP PROCEDURE BAD_QUERY.sp_registrar_compra_automovil
 IF OBJECT_ID('BAD_QUERY.sp_registrar_venta_automovil', 'P') IS NOT NULL 
@@ -48,11 +52,15 @@ IF OBJECT_ID('BAD_QUERY.sp_registrar_venta_autoparte', 'P') IS NOT NULL
 IF EXISTS(SELECT name FROM sys.objects WHERE type_desc LIKE '%fun%' AND name LIKE 'f_precio_venta')
 	DROP FUNCTION BAD_QUERY.f_precio_venta
 IF EXISTS (SELECT name FROM sys.schemas WHERE name LIKE 'BAD_QUERY')
-	DROP SCHEMA BAD_QUERY  
+	DROP SCHEMA BAD_QUERY
 GO
 
 CREATE SCHEMA BAD_QUERY
 GO
+
+/*******************************/
+/*            TABLAS           */
+/*******************************/
 
 CREATE TABLE BAD_QUERY.Clientes (
 	cliente_id int IDENTITY PRIMARY KEY,
@@ -71,7 +79,7 @@ CREATE TABLE BAD_QUERY.Sucursales (
 	sucursal_telefono decimal(18,0),
 	sucursal_mail nvarchar(255)
 ) 
-CREATE INDEX indice_sucursales ON BAD_QUERY.Sucursales(sucursal_direccion)
+
 
 CREATE TABLE BAD_QUERY.Tipos_auto (
 	tipo_auto_codigo decimal(18,0) PRIMARY KEY,
@@ -103,7 +111,7 @@ CREATE TABLE BAD_QUERY.Modelos (
 	modelo_tipo_transmision decimal(18,0) FOREIGN KEY REFERENCES BAD_QUERY.Tipos_transmision(tipo_transmision_codigo),
 	modelo_tipo_motor decimal(18,0) FOREIGN KEY REFERENCES BAD_QUERY.Tipos_motor(tipo_motor_codigo)
 ) 
-CREATE INDEX indice_modelos ON BAD_QUERY.Modelos(modelo_tipo_auto,modelo_tipo_caja,modelo_tipo_transmision,modelo_tipo_motor)
+
 
 CREATE TABLE BAD_QUERY.Automoviles (
 	automovil_id int IDENTITY PRIMARY KEY,
@@ -114,7 +122,7 @@ CREATE TABLE BAD_QUERY.Automoviles (
 	automovil_cantidad_km decimal(18,0),
 	automovil_modelo decimal(18,0) FOREIGN KEY REFERENCES BAD_QUERY.Modelos(modelo_codigo)
 )
-CREATE INDEX indice_automoviles ON BAD_QUERY.Automoviles(automovil_patente,automovil_modelo)
+
 
 CREATE TABLE BAD_QUERY.Autopartes(
 	autoparte_codigo decimal(18,0) PRIMARY KEY,
@@ -122,7 +130,7 @@ CREATE TABLE BAD_QUERY.Autopartes(
 	autoparte_modelo_auto decimal(18,0) FOREIGN KEY REFERENCES BAD_QUERY.Modelos(modelo_codigo),
 	autoparte_categoria nvarchar(255),
 )
-CREATE INDEX indice_autopartes ON BAD_QUERY.Autopartes(autoparte_modelo_auto)
+
 
 CREATE TABLE BAD_QUERY.Compras_autopartes(
    compra_autopartes_numero decimal(18,0) PRIMARY KEY,
@@ -178,6 +186,44 @@ CREATE TABLE BAD_QUERY.Logs(
 )
 GO
 
+/*******************************/
+/*            INDICES          */
+/*******************************/
+CREATE INDEX indice_sucursales ON BAD_QUERY.Sucursales(sucursal_direccion)
+CREATE INDEX indice_modelos ON BAD_QUERY.Modelos(modelo_tipo_auto,modelo_tipo_caja,modelo_tipo_transmision,modelo_tipo_motor)
+CREATE INDEX indice_automoviles ON BAD_QUERY.Automoviles(automovil_patente,automovil_modelo)
+CREATE INDEX indice_autopartes ON BAD_QUERY.Autopartes(autoparte_modelo_auto)
+GO
+
+/*******************************/
+/*            VISTAS           */
+/*******************************/
+
+CREATE VIEW BAD_QUERY.vw_compras_automoviles AS
+SELECT compra_automovil_numero [Nro compra], 
+compra_automovil_fecha [Fecha compra],
+modelo_nombre [Modelo], 
+modelo_fabricante [Fabricante],
+modelo_potencia [Potencia],
+automovil_cantidad_km [Kilometraje],
+CONCAT(cliente_nombre,' ', cliente_apellido) [Vendedor],
+cliente_dni [DNI vendedor]
+FROM
+BAD_QUERY.Compras_automoviles Co
+INNER JOIN BAD_QUERY.Automoviles A ON Co.compra_automovil_automovil = A.automovil_id
+INNER JOIN BAD_QUERY.Modelos M ON A.automovil_modelo = M.modelo_codigo
+INNER JOIN BAD_QUERY.Clientes Cl ON Co.compra_automovil_cliente = Cl.cliente_id
+GO
+
+CREATE VIEW BAD_QUERY.vw_automoviles_disponibles AS
+SELECT * FROM BAD_QUERY.Automoviles 
+WHERE automovil_id NOT IN (SELECT factura_automovil_automovil FROM BAD_QUERY.Facturas_automoviles)
+GO
+
+/*******************************/
+/*          FUNCIONES          */
+/*******************************/
+
 CREATE FUNCTION BAD_QUERY.f_precio_venta(@precio_compra DECIMAL(18,0))
 RETURNS DECIMAL(18,0)
 AS
@@ -186,6 +232,9 @@ BEGIN
 END
 GO
 
+/*******************************/
+/*      STORED PROCEDURES      */
+/*******************************/
 CREATE PROCEDURE BAD_QUERY.sp_registrar_compra_automovil
 @id_sucursal int, 
 @nro_chasis nvarchar(50),
@@ -209,7 +258,6 @@ BEGIN
 
 END
 GO
-
 
 CREATE PROCEDURE BAD_QUERY.sp_registrar_venta_automovil
 @id_automovil int,
@@ -249,7 +297,6 @@ BEGIN
 	END
 END
 GO
-
 
 CREATE PROCEDURE BAD_QUERY.sp_registrar_venta_autoparte
 @ciudad NVARCHAR(255),
@@ -422,6 +469,9 @@ WHERE FACTURA_NRO IS NOT NULL AND AUTO_PARTE_CODIGO IS NOT NULL
 END
 GO
 
+/*******************************/
+/*           TRIGGERS          */
+/*******************************/
 
 CREATE TRIGGER BAD_QUERY.tr_log_nuevas_compras ON BAD_QUERY.Compras_automoviles AFTER INSERT
 AS

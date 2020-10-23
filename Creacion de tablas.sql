@@ -39,8 +39,10 @@ IF OBJECT_ID('BAD_QUERY.Logs', 'U') IS NOT NULL
   DROP TABLE BAD_QUERY.Logs;
 IF OBJECT_ID('BAD_QUERY.vw_compras_automoviles', 'V') IS NOT NULL 
   DROP VIEW BAD_QUERY.vw_compras_automoviles;
-  IF OBJECT_ID('BAD_QUERY.vw_automoviles_disponibles', 'V') IS NOT NULL 
+IF OBJECT_ID('BAD_QUERY.vw_automoviles_disponibles', 'V') IS NOT NULL 
   DROP VIEW BAD_QUERY.vw_automoviles_disponibles;
+IF OBJECT_ID('BAD_QUERY.vw_cantidad_automoviles_vendidos_por_sucursal', 'V') IS NOT NULL 
+  DROP VIEW BAD_QUERY.vw_cantidad_automoviles_vendidos_por_sucursal;
 IF OBJECT_ID('BAD_QUERY.sp_registrar_compra_automovil', 'P') IS NOT NULL 
   DROP PROCEDURE BAD_QUERY.sp_registrar_compra_automovil
 IF OBJECT_ID('BAD_QUERY.sp_registrar_venta_automovil', 'P') IS NOT NULL 
@@ -218,6 +220,14 @@ GO
 CREATE VIEW BAD_QUERY.vw_automoviles_disponibles AS
 SELECT * FROM BAD_QUERY.Automoviles 
 WHERE automovil_id NOT IN (SELECT factura_automovil_automovil FROM BAD_QUERY.Facturas_automoviles)
+GO
+
+CREATE VIEW BAD_QUERY.vw_cantidad_automoviles_vendidos_por_sucursal AS
+SELECT sucursal_id [Sucursal], COUNT(factura_automovil_sucursal) [Cantidad de ventas]
+FROM BAD_QUERY.Sucursales INNER JOIN BAD_QUERY.Facturas_automoviles ON sucursal_id = factura_automovil_sucursal
+WHERE YEAR(factura_automovil_fecha) = YEAR(GETDATE()) AND MONTH(factura_automovil_fecha) = MONTH(GETDATE())
+GROUP BY sucursal_id
+
 GO
 
 /*******************************/

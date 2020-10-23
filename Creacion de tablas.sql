@@ -1,6 +1,10 @@
 USE GD2C2020
 GO
 
+/*******************************/
+/*     LIMPIEZA DE ENTORNO     */
+/*******************************/
+
 IF OBJECT_ID('BAD_QUERY.Compra_X_autoparte', 'U') IS NOT NULL 
   DROP TABLE BAD_QUERY.Compra_X_autoparte;
 IF OBJECT_ID('BAD_QUERY.Factura_X_autoparte', 'U') IS NOT NULL 
@@ -37,12 +41,16 @@ IF OBJECT_ID('BAD_QUERY.Logs', 'U') IS NOT NULL
   DROP TABLE BAD_QUERY.Logs;
 IF OBJECT_ID('BAD_QUERY.vw_compras_automoviles', 'V') IS NOT NULL 
   DROP VIEW BAD_QUERY.vw_compras_automoviles;
+IF OBJECT_ID('BAD_QUERY.vw_ventas_automoviles', 'V') IS NOT NULL 
+  DROP VIEW  BAD_QUERY.vw_ventas_automoviles;
 IF OBJECT_ID('BAD_QUERY.vw_automoviles_disponibles', 'V') IS NOT NULL 
   DROP VIEW BAD_QUERY.vw_automoviles_disponibles;
 IF OBJECT_ID('BAD_QUERY.vw_automoviles_vendidos', 'V') IS NOT NULL 
   DROP VIEW BAD_QUERY.vw_automoviles_vendidos;
 IF OBJECT_ID('BAD_QUERY.vw_compras_clientes', 'V') IS NOT NULL 
   DROP VIEW BAD_QUERY.vw_compras_clientes;
+IF OBJECT_ID('BAD_QUERY.vw_compras_autopartes', 'V') IS NOT NULL 
+  DROP VIEW BAD_QUERY.vw_compras_autopartes;
 IF OBJECT_ID('BAD_QUERY.vw_facturas_autopartes', 'V') IS NOT NULL 
   DROP VIEW BAD_QUERY.vw_facturas_autopartes;
 IF OBJECT_ID('BAD_QUERY.sp_migrar_datos', 'P') IS NOT NULL 
@@ -212,6 +220,7 @@ modelo_nombre [Modelo],
 modelo_fabricante [Fabricante],
 modelo_potencia [Potencia],
 automovil_cantidad_km [Kilometraje],
+compra_automovil_precio [Costo],
 CONCAT(cliente_nombre,' ', cliente_apellido) [Vendedor],
 cliente_dni [DNI vendedor]
 FROM
@@ -219,6 +228,23 @@ BAD_QUERY.Compras_automoviles Co
 INNER JOIN BAD_QUERY.Automoviles A ON Co.compra_automovil_automovil = A.automovil_id
 INNER JOIN BAD_QUERY.Modelos M ON A.automovil_modelo = M.modelo_codigo
 INNER JOIN BAD_QUERY.Clientes Cl ON Co.compra_automovil_cliente = Cl.cliente_id
+GO
+
+CREATE VIEW BAD_QUERY.vw_ventas_automoviles AS
+SELECT factura_automovil_numero [Nro factura], 
+factura_automovil_fecha [Fecha venta],
+modelo_nombre [Modelo], 
+modelo_fabricante [Fabricante],
+modelo_potencia [Potencia],
+automovil_cantidad_km [Kilometraje],
+factura_automovil_precio [Precio venta],
+CONCAT(cliente_nombre,' ', cliente_apellido) [Comprador],
+cliente_dni [DNI comprador]
+FROM
+BAD_QUERY.Facturas_automoviles Fa
+INNER JOIN BAD_QUERY.Automoviles A ON Fa.factura_automovil_automovil = A.automovil_id
+INNER JOIN BAD_QUERY.Modelos M ON A.automovil_modelo = M.modelo_codigo
+INNER JOIN BAD_QUERY.Clientes Cl ON Fa.factura_automovil_cliente = Cl.cliente_id
 GO
 
 CREATE VIEW BAD_QUERY.vw_automoviles_disponibles AS
@@ -243,6 +269,17 @@ INNER JOIN BAD_QUERY.Compras_automoviles ON cliente_id = compra_automovil_client
 GROUP BY cliente_id,cliente_nombre,cliente_apellido
 GO
 
+CREATE VIEW BAD_QUERY.vw_compras_autopartes AS
+SELECT
+compra_autopartes_numero [Nro compra], 
+compra_autopartes_fecha [Fecha Compra], 
+SUM (cantidad) [Cantidad comprada],
+SUM (precio) [Costo total]
+FROM BAD_QUERY.Compras_autopartes
+INNER JOIN BAD_QUERY.Compra_X_autoparte ON compra_autopartes_numero = compra_autopartes
+GROUP BY compra_autopartes_numero, compra_autopartes_fecha
+GO
+
 CREATE VIEW BAD_QUERY.vw_facturas_autopartes AS
 SELECT
 factura_autopartes_numero [Nro factura], 
@@ -253,6 +290,8 @@ FROM BAD_QUERY.Facturas_autopartes
 INNER JOIN BAD_QUERY.Factura_X_autoparte ON factura_autopartes_numero = factura_autopartes
 GROUP BY factura_autopartes_numero, factura_autopartes_fecha
 GO
+
+
 /*******************************/
 /*          FUNCIONES          */
 /*******************************/

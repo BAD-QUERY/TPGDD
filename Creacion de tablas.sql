@@ -33,16 +33,20 @@ IF OBJECT_ID('BAD_QUERY.Tipos_transmision', 'U') IS NOT NULL
   DROP TABLE BAD_QUERY.Tipos_transmision;
 IF OBJECT_ID('BAD_QUERY.Tipos_motor', 'U') IS NOT NULL 
   DROP TABLE BAD_QUERY.Tipos_motor;
-IF OBJECT_ID('BAD_QUERY.sp_migrar_datos', 'P') IS NOT NULL 
-  DROP PROCEDURE BAD_QUERY.sp_migrar_datos
 IF OBJECT_ID('BAD_QUERY.Logs', 'U') IS NOT NULL 
   DROP TABLE BAD_QUERY.Logs;
 IF OBJECT_ID('BAD_QUERY.vw_compras_automoviles', 'V') IS NOT NULL 
   DROP VIEW BAD_QUERY.vw_compras_automoviles;
 IF OBJECT_ID('BAD_QUERY.vw_automoviles_disponibles', 'V') IS NOT NULL 
   DROP VIEW BAD_QUERY.vw_automoviles_disponibles;
-IF OBJECT_ID('BAD_QUERY.vw_cantidad_automoviles_vendidos_por_sucursal', 'V') IS NOT NULL 
-  DROP VIEW BAD_QUERY.vw_cantidad_automoviles_vendidos_por_sucursal;
+IF OBJECT_ID('BAD_QUERY.vw_automoviles_vendidos', 'V') IS NOT NULL 
+  DROP VIEW BAD_QUERY.vw_automoviles_vendidos;
+IF OBJECT_ID('BAD_QUERY.vw_compras_clientes', 'V') IS NOT NULL 
+  DROP VIEW BAD_QUERY.vw_compras_clientes;
+IF OBJECT_ID('BAD_QUERY.vw_facturas_autopartes', 'V') IS NOT NULL 
+  DROP VIEW BAD_QUERY.vw_facturas_autopartes;
+IF OBJECT_ID('BAD_QUERY.sp_migrar_datos', 'P') IS NOT NULL 
+  DROP PROCEDURE BAD_QUERY.sp_migrar_datos
 IF OBJECT_ID('BAD_QUERY.sp_registrar_compra_automovil', 'P') IS NOT NULL 
   DROP PROCEDURE BAD_QUERY.sp_registrar_compra_automovil
 IF OBJECT_ID('BAD_QUERY.sp_registrar_venta_automovil', 'P') IS NOT NULL 
@@ -222,14 +226,33 @@ SELECT * FROM BAD_QUERY.Automoviles
 WHERE automovil_id NOT IN (SELECT factura_automovil_automovil FROM BAD_QUERY.Facturas_automoviles)
 GO
 
-CREATE VIEW BAD_QUERY.vw_cantidad_automoviles_vendidos_por_sucursal AS
-SELECT sucursal_id [Sucursal], COUNT(factura_automovil_sucursal) [Cantidad de ventas]
+CREATE VIEW BAD_QUERY.vw_automoviles_vendidos AS
+SELECT sucursal_id [Sucursal], sucursal_direccion [Direccion], COUNT(factura_automovil_sucursal) [Cantidad de ventas], SUM(factura_automovil_precio) [Cantidad facturada]
 FROM BAD_QUERY.Sucursales INNER JOIN BAD_QUERY.Facturas_automoviles ON sucursal_id = factura_automovil_sucursal
 WHERE YEAR(factura_automovil_fecha) = YEAR(GETDATE()) AND MONTH(factura_automovil_fecha) = MONTH(GETDATE())
-GROUP BY sucursal_id
-
+GROUP BY sucursal_id, sucursal_direccion
 GO
 
+CREATE VIEW BAD_QUERY.vw_compras_clientes AS
+SELECT cliente_id AS [ID cliente], 
+CONCAT(cliente_nombre,' ',cliente_apellido) [Nombreliente],
+COUNT(compra_automovil_numero) AS [Cantidad de automoviles comprados],
+SUM(compra_automovil_precio) AS [Dinero gastado]
+FROM BAD_QUERY.Clientes
+INNER JOIN BAD_QUERY.Compras_automoviles ON cliente_id = compra_automovil_cliente
+GROUP BY cliente_id,cliente_nombre,cliente_apellido
+GO
+
+CREATE VIEW BAD_QUERY.vw_facturas_autopartes AS
+SELECT
+factura_autopartes_numero [Nro factura], 
+factura_autopartes_fecha [Fecha factura], 
+SUM (cantidad) [Cantidad vendida],
+SUM (precio) [Precio total]
+FROM BAD_QUERY.Facturas_autopartes
+INNER JOIN BAD_QUERY.Factura_X_autoparte ON factura_autopartes_numero = factura_autopartes
+GROUP BY factura_autopartes_numero, factura_autopartes_fecha
+GO
 /*******************************/
 /*          FUNCIONES          */
 /*******************************/

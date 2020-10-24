@@ -203,15 +203,6 @@ CREATE TABLE BAD_QUERY.Logs(
 GO
 
 /*******************************/
-/*            INDICES          */
-/*******************************/
-CREATE INDEX indice_sucursales ON BAD_QUERY.Sucursales(sucursal_direccion)
-CREATE INDEX indice_modelos ON BAD_QUERY.Modelos(modelo_tipo_auto,modelo_tipo_caja,modelo_tipo_transmision,modelo_tipo_motor)
-CREATE INDEX indice_automoviles ON BAD_QUERY.Automoviles(automovil_patente,automovil_modelo)
-CREATE INDEX indice_autopartes ON BAD_QUERY.Autopartes(autoparte_modelo_auto)
-GO
-
-/*******************************/
 /*            VISTAS           */
 /*******************************/
 
@@ -340,12 +331,19 @@ AS
 BEGIN
     DECLARE @id_automovil int 
 
-	INSERT INTO BAD_QUERY.Automoviles values (@nro_chasis, @nro_motor, @patente, @fecha_alta, @kilometraje, @modelo)
-	SELECT @id_automovil = scope_identity()
+	BEGIN TRANSACTION
+	BEGIN TRY
+		INSERT INTO BAD_QUERY.Automoviles values (@nro_chasis, @nro_motor, @patente, @fecha_alta, @kilometraje, @modelo)
+		SELECT @id_automovil = scope_identity()
+		INSERT INTO BAD_QUERY.Compras_automoviles (compra_automovil_numero, compra_automovil_fecha, compra_automovil_precio, compra_automovil_sucursal,
+		 compra_automovil_automovil)
+		 VALUES(@numero_compra, GETDATE(), @precio_automovil, @id_sucursal, @id_automovil)
 
-	INSERT INTO BAD_QUERY.Compras_automoviles (compra_automovil_numero, compra_automovil_fecha, compra_automovil_precio, compra_automovil_sucursal,
-	 compra_automovil_automovil)
-	 values(@numero_compra, GETDATE(), @precio_automovil, @id_sucursal, @id_automovil)
+		 COMMIT TRANSACTION
+	END TRY
+	BEGIN CATCH
+		ROLLBACK TRANSACTION
+	END CATCH
 
 END
 GO
@@ -357,28 +355,49 @@ CREATE PROCEDURE BAD_QUERY.sp_registrar_venta_automovil
 AS
 BEGIN
     DECLARE @precio_automovil decimal(18,0) = BAD_QUERY.f_precio_venta((SELECT compra_automovil_precio FROM BAD_QUERY.Compras_automoviles WHERE compra_automovil_automovil = @id_automovil))
-	
-	INSERT INTO BAD_QUERY.Facturas_automoviles(factura_automovil_numero, factura_automovil_fecha, factura_automovil_precio, factura_automovil_sucursal,
-	 factura_automovil_automovil)
-	 values(@numero_factura, GETDATE(), @precio_automovil, @id_sucursal, @id_automovil)
+
+	BEGIN TRANSACTION
+	BEGIN TRY
+		INSERT INTO BAD_QUERY.Facturas_automoviles(factura_automovil_numero, factura_automovil_fecha, factura_automovil_precio, factura_automovil_sucursal,
+		factura_automovil_automovil)
+		values(@numero_factura, GETDATE(), @precio_automovil, @id_sucursal, @id_automovil)
+
+		COMMIT TRANSACTION
+	END TRY
+	BEGIN CATCH
+		ROLLBACK TRANSACTION
+	END CATCH
 
 END
 GO
 
+
 CREATE PROCEDURE BAD_QUERY.sp_registrar_compra_autoparte
-@codigo_autoparte INT,
+@codigo_autoparte DECIMAL(18,0),
 @descripcion NVARCHAR(255),
 @categoria NVARCHAR(255),
-@id_modelo_automovil INT,
+@id_modelo_automovil DECIMAL(18,0),
+@numero_compra DECIMAL(18,0),
+@cantidad DECIMAL(18,0),
+@precio DECIMAL(18,0),
+@id_vendedor DECIMAL(18,0),
 @id_sucursal INT
 AS
 BEGIN
-	--DISABLE TRIGGER ALL ON 
-	IF NOT EXISTS(SELECT autoparte_codigo FROM BAD_QUERY.Autopartes WHERE autoparte_codigo = @codigo_autoparte)
 	BEGIN
 		BEGIN TRANSACTION
 		BEGIN TRY
-			INSERT INTO BAD_QUERY.Autopartes VALUES(@codigo_autoparte, @descripcion, @id_modelo_automovil, @categoria) 
+			IF NOT EXISTS(SELECT compra_autopartes_numero FROM BAD_QUERY.Compras_autopartes WHERE compra_autopartes_numero = @numero_compra)
+			BEGIN	
+				INSERT INTO BAD_QUERY.Compras_autopartes VALUES(@numero_compra, CONVERT(DATETIME2(3), GETDATE()), @id_sucursal, @id_vendedor)
+			END
+
+			INSERT INTO BAD_QUERY.Compra_X_autoparte VALUES(@numero_compra, @codigo_autoparte, @cantidad, @precio)
+
+			IF NOT EXISTS(SELECT autoparte_codigo FROM BAD_QUERY.Autopartes WHERE autoparte_codigo = @codigo_autoparte)
+			BEGIN
+				INSERT INTO BAD_QUERY.Autopartes VALUES(@codigo_autoparte, @descripcion, @id_modelo_automovil, @categoria) 
+			END
 
 			COMMIT TRANSACTION
 		END TRY
@@ -393,14 +412,13 @@ GO
 CREATE PROCEDURE BAD_QUERY.sp_registrar_venta_autoparte
 @ciudad NVARCHAR(255),
 @id_sucursal INT,
-@codigo_autoparte INT,
+@codigo_autoparte DECIMAL(18,0),
 @categoria NVARCHAR(255),
-@cantidad INT,
+@cantidad DECIMAL(18,0),
 @precio DECIMAL(18,0),
 @numero_factura DECIMAL(18,0),
 @fecha DATETIME2(3),
-@id_vendedor INT,
-@id_comprador INT
+@id_comprador DECIMAL(18,0)
 AS
 BEGIN
 	DECLARE @numero_compra DECIMAL(18,0) = (SELECT MAX(compra_autopartes_numero) FROM BAD_QUERY.Compras_autopartes) + 1
@@ -408,8 +426,6 @@ BEGIN
 	
 	BEGIN TRANSACTION
 	BEGIN TRY
-		INSERT INTO BAD_QUERY.Compras_autopartes VALUES(@numero_compra, CONVERT(DATETIME2(3), GETDATE()), @id_sucursal, @id_vendedor)
-		INSERT INTO BAD_QUERY.Compra_X_autoparte VALUES(@numero_compra, @codigo_autoparte, @cantidad, @precio)
 		INSERT INTO BAD_QUERY.Facturas_autopartes VALUES(@numero_factura, @fecha, @id_sucursal, @id_comprador)
 		INSERT INTO BAD_QUERY.Factura_X_autoparte VALUES(@numero_factura, @codigo_autoparte, @cantidad, @precio_venta)
 
@@ -432,7 +448,7 @@ AS
         DISABLE TRIGGER ALL ON BAD_QUERY.Facturas_automoviles;
         DISABLE TRIGGER ALL ON BAD_QUERY.Compras_autopartes;
         DISABLE TRIGGER ALL ON BAD_QUERY.Facturas_autopartes;
-
+	
         -- Datos de clientes
         INSERT INTO BAD_QUERY.Clientes
                SELECT DISTINCT 
@@ -470,13 +486,6 @@ AS
                       SUCURSAL_MAIL
                FROM GD2C2020.gd_esquema.Maestra
                WHERE SUCURSAL_DIRECCION IS NOT NULL;
-
-        -- Esto se usaria para contemplar las sucursales que figuran en una factura pero no en una compra. En la base de datos este caso no se da. 
-		/*INSERT INTO BAD_QUERY.Sucursales
-		  SELECT DISTINCT FAC_SUCURSAL_DIRECCION, FAC_SUCURSAL_CIUDAD, FAC_SUCURSAL_TELEFONO,SUCURSAL_MAIL
-		  FROM GD2C2020.gd_esquema.Maestra
-		  WHERE FAC_SUCURSAL_DIRECCION IS NOT NULL AND FAC_SUCURSAL_DIRECCION NOT IN (SELECT sucursal_direccion FROM BAD_QUERY.Sucursales)*/
-        --
 
         -- Datos de tipo auto
         INSERT INTO BAD_QUERY.Tipos_auto
@@ -642,14 +651,15 @@ AS
                WHERE FACTURA_NRO IS NOT NULL
                      AND AUTO_PARTE_CODIGO IS NOT NULL;
         --
-
         --Se habilitan los triggers de logs luego de la migracion
         ENABLE TRIGGER ALL ON BAD_QUERY.Compras_automoviles;
         ENABLE TRIGGER ALL ON BAD_QUERY.Facturas_automoviles;
         ENABLE TRIGGER ALL ON BAD_QUERY.Compras_autopartes;
         ENABLE TRIGGER ALL ON BAD_QUERY.Facturas_autopartes;
+
     END;
 GO
+
 /*******************************/
 /*           TRIGGERS          */
 /*******************************/
@@ -752,4 +762,14 @@ GO
 EXECUTE BAD_QUERY.sp_migrar_datos;
 GO
 
+DROP PROCEDURE BAD_QUERY.sp_migrar_datos;
+GO
 
+/*******************************/
+/*            INDICES          */
+/*******************************/
+CREATE INDEX indice_sucursales ON BAD_QUERY.Sucursales(sucursal_direccion)
+CREATE INDEX indice_modelos ON BAD_QUERY.Modelos(modelo_tipo_auto,modelo_tipo_caja,modelo_tipo_transmision,modelo_tipo_motor)
+CREATE INDEX indice_automoviles ON BAD_QUERY.Automoviles(automovil_patente,automovil_modelo)
+CREATE INDEX indice_autopartes ON BAD_QUERY.Autopartes(autoparte_modelo_auto)
+GO

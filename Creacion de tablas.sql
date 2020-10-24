@@ -564,10 +564,31 @@ GO
 /*           TRIGGERS          */
 /*******************************/
 
-CREATE TRIGGER BAD_QUERY.tr_log_nuevas_compras ON BAD_QUERY.Compras_automoviles AFTER INSERT
+CREATE TRIGGER BAD_QUERY.tr_log_compras_automoviles ON BAD_QUERY.Compras_automoviles AFTER INSERT
 AS
 BEGIN
-	INSERT INTO BAD_QUERY.Logs values ('Se han agregado nuevas compras de automoviles', GETDATE(), CURRENT_USER)
+	INSERT INTO BAD_QUERY.Logs values ('Se han agregado nuevas compras de automoviles', GETDATE(), SYSTEM_USER)
+END
+GO
+
+CREATE TRIGGER BAD_QUERY.tr_log_ventas_automoviles ON BAD_QUERY.Compras_automoviles AFTER INSERT
+AS
+BEGIN
+	INSERT INTO BAD_QUERY.Logs values ('Se han agregado nuevas ventas de automoviles', GETDATE(), SYSTEM_USER)
+END
+GO
+
+CREATE TRIGGER BAD_QUERY.tr_log_compras_autopartes ON BAD_QUERY.Compras_automoviles AFTER INSERT
+AS
+BEGIN
+	INSERT INTO BAD_QUERY.Logs values ('Se han agregado nuevas compras de autopartes', GETDATE(), SYSTEM_USER)
+END
+GO
+
+CREATE TRIGGER BAD_QUERY.tr_log_ventas_autopartes ON BAD_QUERY.Compras_automoviles AFTER INSERT
+AS
+BEGIN
+	INSERT INTO BAD_QUERY.Logs values ('Se han agregado nuevas ventas de autopartes', GETDATE(), SYSTEM_USER)
 END
 GO
 

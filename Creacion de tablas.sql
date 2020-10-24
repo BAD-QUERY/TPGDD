@@ -574,6 +574,40 @@ GO
 EXECUTE BAD_QUERY.sp_migrar_datos;
 GO
 
+
+/***************************************/
+/*           TRIGGERS POST SP          */
+/***************************************/
+
+CREATE TRIGGER BAD_QUERY.tr_log_nuevas_compras_v2 ON BAD_QUERY.Compras_automoviles AFTER INSERT
+AS
+BEGIN
+	DECLARE @Nro_compra int
+	SET @Nro_compra = (Select compra_automovil_numero from INSERTED)
+	INSERT INTO BAD_QUERY.Logs values (CONCAT('Se ha agregado la compra numero: ',@Nro_compra,' a la tabla de Compras-automoviles'), GETDATE(), SYSTEM_USER)
+END
+GO
+
+CREATE TRIGGER BAD_QUERY.tr_log_nuevas_ventas_automoviles ON BAD_QUERY.Facturas_automoviles AFTER INSERT
+AS
+BEGIN
+	DECLARE @Nro_factura int
+	SET @Nro_factura = (Select factura_automovil_numero from INSERTED)
+	INSERT INTO BAD_QUERY.Logs values (CONCAT('Se ha agregado la factura numero: ',@Nro_factura, ' a la tabla de Facturas_automoviles'), GETDATE(), SYSTEM_USER)
+END
+GO
+
+CREATE TRIGGER BAD_QUERY.tr_log_nuevas_ventas_autopartes ON BAD_QUERY.Facturas_autopartes AFTER INSERT
+AS
+BEGIN
+	DECLARE @Nro_factura int
+	SET @Nro_factura = (Select factura_autopartes_numero from INSERTED)
+	INSERT INTO BAD_QUERY.Logs values (CONCAT('Se ha agregado la factura numero: ',@Nro_factura, ' a la tabla de Facturas_autopartes'), GETDATE(), SYSTEM_USER)
+END
+GO
+
+INSERT INTO BAD_QUERY.Facturas_autopartes VALUES (1234567890,null,null,null)
+GO
 --Pruebas
 /*
 EXECUTE BAD_QUERY.sp_registrar_compra_automovil

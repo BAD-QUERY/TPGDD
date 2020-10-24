@@ -373,6 +373,7 @@ CREATE PROCEDURE BAD_QUERY.sp_registrar_compra_autoparte
 @id_sucursal INT
 AS
 BEGIN
+	--DISABLE TRIGGER ALL ON 
 	IF NOT EXISTS(SELECT autoparte_codigo FROM BAD_QUERY.Autopartes WHERE autoparte_codigo = @codigo_autoparte)
 	BEGIN
 		BEGIN TRANSACTION
@@ -423,143 +424,219 @@ GO
 
 CREATE PROCEDURE BAD_QUERY.sp_migrar_datos
 AS
-BEGIN
--- Datos de clientes
-INSERT INTO BAD_QUERY.Clientes
-SELECT DISTINCT CLIENTE_NOMBRE, CLIENTE_APELLIDO, CLIENTE_DIRECCION, CLIENTE_DNI, CLIENTE_FECHA_NAC, CLIENTE_MAIL
-FROM GD2C2020.gd_esquema.Maestra
-WHERE CLIENTE_APELLIDO IS NOT NULL
+    BEGIN
 
-INSERT INTO BAD_QUERY.Clientes
-SELECT DISTINCT FAC_CLIENTE_NOMBRE, FAC_CLIENTE_APELLIDO, FAC_CLIENTE_DIRECCION, FAC_CLIENTE_DNI, FAC_CLIENTE_FECHA_NAC, FAC_CLIENTE_MAIL
-FROM GD2C2020.gd_esquema.Maestra
-WHERE FAC_CLIENTE_DNI IS NOT NULL AND FAC_CLIENTE_DNI NOT IN (SELECT cliente_dni FROM BAD_QUERY.Clientes)
---
+        --Deshabilito los Triggers de logs antes de la migración.
+		;
+        DISABLE TRIGGER ALL ON BAD_QUERY.Compras_automoviles;
+        DISABLE TRIGGER ALL ON BAD_QUERY.Facturas_automoviles;
+        DISABLE TRIGGER ALL ON BAD_QUERY.Compras_autopartes;
+        DISABLE TRIGGER ALL ON BAD_QUERY.Facturas_autopartes;
 
--- Datos de sucursales
-INSERT INTO BAD_QUERY.Sucursales
-SELECT DISTINCT SUCURSAL_DIRECCION, SUCURSAL_CIUDAD, SUCURSAL_TELEFONO,SUCURSAL_MAIL
-FROM GD2C2020.gd_esquema.Maestra
-WHERE SUCURSAL_DIRECCION IS NOT NULL
+        -- Datos de clientes
+        INSERT INTO BAD_QUERY.Clientes
+               SELECT DISTINCT 
+                      CLIENTE_NOMBRE, 
+                      CLIENTE_APELLIDO, 
+                      CLIENTE_DIRECCION, 
+                      CLIENTE_DNI, 
+                      CLIENTE_FECHA_NAC, 
+                      CLIENTE_MAIL
+               FROM GD2C2020.gd_esquema.Maestra
+               WHERE CLIENTE_APELLIDO IS NOT NULL;
+        INSERT INTO BAD_QUERY.Clientes
+               SELECT DISTINCT 
+                      FAC_CLIENTE_NOMBRE, 
+                      FAC_CLIENTE_APELLIDO, 
+                      FAC_CLIENTE_DIRECCION, 
+                      FAC_CLIENTE_DNI, 
+                      FAC_CLIENTE_FECHA_NAC, 
+                      FAC_CLIENTE_MAIL
+               FROM GD2C2020.gd_esquema.Maestra
+               WHERE FAC_CLIENTE_DNI IS NOT NULL
+                     AND FAC_CLIENTE_DNI NOT IN
+               (
+                   SELECT cliente_dni
+                   FROM BAD_QUERY.Clientes
+               );
+        --
+        -- Datos de sucursales
+        INSERT INTO BAD_QUERY.Sucursales
+               SELECT DISTINCT 
+                      SUCURSAL_DIRECCION, 
+                      SUCURSAL_CIUDAD, 
+                      SUCURSAL_TELEFONO, 
+                      SUCURSAL_MAIL
+               FROM GD2C2020.gd_esquema.Maestra
+               WHERE SUCURSAL_DIRECCION IS NOT NULL;
 
--- Esto se usaria para contemplar las sucursales que figuran en una factura pero no en una compra. En la base de datos este caso no se da. 
+        -- Esto se usaria para contemplar las sucursales que figuran en una factura pero no en una compra. En la base de datos este caso no se da. 
 /*INSERT INTO BAD_QUERY.Sucursales
 SELECT DISTINCT FAC_SUCURSAL_DIRECCION, FAC_SUCURSAL_CIUDAD, FAC_SUCURSAL_TELEFONO,SUCURSAL_MAIL
 FROM GD2C2020.gd_esquema.Maestra
 WHERE FAC_SUCURSAL_DIRECCION IS NOT NULL AND FAC_SUCURSAL_DIRECCION NOT IN (SELECT sucursal_direccion FROM BAD_QUERY.Sucursales)*/
---
 
--- Datos de tipo auto
-INSERT INTO BAD_QUERY.Tipos_auto
-SELECT DISTINCT TIPO_AUTO_CODIGO, TIPO_AUTO_DESC
-FROM GD2C2020.gd_esquema.Maestra
-WHERE TIPO_AUTO_CODIGO IS NOT NULL
---
+        --
+        -- Datos de tipo auto
+        INSERT INTO BAD_QUERY.Tipos_auto
+               SELECT DISTINCT 
+                      TIPO_AUTO_CODIGO, 
+                      TIPO_AUTO_DESC
+               FROM GD2C2020.gd_esquema.Maestra
+               WHERE TIPO_AUTO_CODIGO IS NOT NULL;
+        --
+        -- Datos de tipo caja
+        INSERT INTO BAD_QUERY.Tipos_caja
+               SELECT DISTINCT 
+                      TIPO_CAJA_CODIGO, 
+                      TIPO_CAJA_DESC
+               FROM GD2C2020.gd_esquema.Maestra
+               WHERE TIPO_CAJA_CODIGO IS NOT NULL;
+        --
+        -- Datos de tipo transmision
+        INSERT INTO BAD_QUERY.Tipos_transmision
+               SELECT DISTINCT 
+                      TIPO_TRANSMISION_CODIGO, 
+                      TIPO_TRANSMISION_DESC
+               FROM GD2C2020.gd_esquema.Maestra
+               WHERE TIPO_TRANSMISION_CODIGO IS NOT NULL;
+        --
+        -- Datos de tipo motor
+        INSERT INTO BAD_QUERY.Tipos_motor
+               SELECT DISTINCT 
+                      TIPO_MOTOR_CODIGO, 
+                      NULL
+               FROM GD2C2020.gd_esquema.Maestra
+               WHERE TIPO_TRANSMISION_CODIGO IS NOT NULL;
+        --
+        -- Datos de modelo
+        INSERT INTO BAD_QUERY.Modelos
+               SELECT DISTINCT 
+                      MODELO_CODIGO, 
+                      MODELO_NOMBRE, 
+                      MODELO_POTENCIA, 
+                      FABRICANTE_NOMBRE, 
+                      TIPO_AUTO_CODIGO, 
+                      TIPO_CAJA_CODIGO, 
+                      TIPO_TRANSMISION_CODIGO, 
+                      TIPO_MOTOR_CODIGO
+               FROM GD2C2020.gd_esquema.Maestra
+               WHERE MODELO_CODIGO IS NOT NULL
+                     AND TIPO_AUTO_CODIGO IS NOT NULL
+                     AND TIPO_CAJA_CODIGO IS NOT NULL
+                     AND TIPO_TRANSMISION_CODIGO IS NOT NULL
+                     AND TIPO_MOTOR_CODIGO IS NOT NULL; 
+        --
+        -- Datos de autoparte
+        INSERT INTO BAD_QUERY.Autopartes
+               SELECT DISTINCT 
+                      AUTO_PARTE_CODIGO, 
+                      AUTO_PARTE_DESCRIPCION, 
+                      MODELO_CODIGO, 
+                      NULL
+               FROM GD2C2020.gd_esquema.Maestra
+               WHERE AUTO_PARTE_CODIGO IS NOT NULL; 
+        --
+        -- Datos de automoviles
+        INSERT INTO BAD_QUERY.Automoviles
+               SELECT DISTINCT 
+                      AUTO_NRO_CHASIS, 
+                      AUTO_NRO_MOTOR, 
+                      AUTO_PATENTE, 
+                      AUTO_FECHA_ALTA, 
+                      AUTO_CANT_KMS, 
+                      MODELO_CODIGO
+               FROM GD2C2020.gd_esquema.Maestra
+               WHERE AUTO_PATENTE IS NOT NULL; 
+        --
+        -- Datos de compras automoviles
+        INSERT INTO BAD_QUERY.Compras_automoviles
+               SELECT DISTINCT 
+                      COMPRA_NRO, 
+                      COMPRA_FECHA, 
+                      COMPRA_PRECIO, 
+                      sucursal_id, 
+                      automovil_id, 
+                      cliente_id
+               FROM GD2C2020.gd_esquema.Maestra
+                    INNER JOIN GD2C2020.BAD_QUERY.Sucursales ON GD2C2020.BAD_QUERY.Sucursales.sucursal_direccion = GD2C2020.gd_esquema.Maestra.SUCURSAL_DIRECCION
+                    INNER JOIN GD2C2020.BAD_QUERY.Automoviles ON GD2C2020.BAD_QUERY.Automoviles.automovil_patente = GD2C2020.gd_esquema.Maestra.AUTO_PATENTE
+                    INNER JOIN GD2C2020.BAD_QUERY.Clientes ON GD2C2020.BAD_QUERY.Clientes.cliente_dni = GD2C2020.gd_esquema.Maestra.CLIENTE_DNI
+                                                              AND GD2C2020.BAD_QUERY.Clientes.cliente_direccion = GD2C2020.gd_esquema.Maestra.CLIENTE_DIRECCION
+               WHERE COMPRA_NRO IS NOT NULL; 
+        --
+        -- Datos de facturas automoviles
+        INSERT INTO BAD_QUERY.Facturas_automoviles
+               SELECT DISTINCT 
+                      FACTURA_NRO, 
+                      FACTURA_FECHA, 
+                      PRECIO_FACTURADO, 
+                      sucursal_id, 
+                      automovil_id, 
+                      cliente_id
+               FROM GD2C2020.gd_esquema.Maestra
+                    INNER JOIN GD2C2020.BAD_QUERY.Sucursales ON GD2C2020.BAD_QUERY.Sucursales.sucursal_direccion = GD2C2020.gd_esquema.Maestra.FAC_SUCURSAL_DIRECCION
+                    INNER JOIN GD2C2020.BAD_QUERY.Automoviles ON GD2C2020.BAD_QUERY.Automoviles.automovil_patente = GD2C2020.gd_esquema.Maestra.AUTO_PATENTE
+                    INNER JOIN GD2C2020.BAD_QUERY.Clientes ON GD2C2020.BAD_QUERY.Clientes.cliente_dni = GD2C2020.gd_esquema.Maestra.FAC_CLIENTE_DNI
+                                                              AND GD2C2020.BAD_QUERY.Clientes.cliente_direccion = GD2C2020.gd_esquema.Maestra.FAC_CLIENTE_DIRECCION
+               WHERE FACTURA_NRO IS NOT NULL; 
+        --
+        -- Datos de compras autopartes
+        INSERT INTO BAD_QUERY.Compras_autopartes
+               SELECT DISTINCT 
+                      COMPRA_NRO, 
+                      COMPRA_FECHA, 
+                      sucursal_id, 
+                      cliente_id
+               FROM GD2C2020.gd_esquema.Maestra
+                    INNER JOIN GD2C2020.BAD_QUERY.Sucursales ON GD2C2020.BAD_QUERY.Sucursales.sucursal_direccion = GD2C2020.gd_esquema.Maestra.SUCURSAL_DIRECCION
+                    INNER JOIN GD2C2020.BAD_QUERY.Clientes ON GD2C2020.BAD_QUERY.Clientes.cliente_dni = GD2C2020.gd_esquema.Maestra.CLIENTE_DNI
+                                                              AND GD2C2020.BAD_QUERY.Clientes.cliente_direccion = GD2C2020.gd_esquema.Maestra.CLIENTE_DIRECCION
+               WHERE COMPRA_NRO IS NOT NULL
+                     AND AUTO_PARTE_CODIGO IS NOT NULL;
+        --
+        -- Datos de facturas autopartes
+        INSERT INTO BAD_QUERY.Facturas_autopartes
+               SELECT DISTINCT 
+                      FACTURA_NRO, 
+                      FACTURA_FECHA, 
+                      sucursal_id, 
+                      cliente_id
+               FROM GD2C2020.gd_esquema.Maestra
+                    INNER JOIN GD2C2020.BAD_QUERY.Sucursales ON GD2C2020.BAD_QUERY.Sucursales.sucursal_direccion = GD2C2020.gd_esquema.Maestra.FAC_SUCURSAL_DIRECCION
+                    INNER JOIN GD2C2020.BAD_QUERY.Clientes ON GD2C2020.BAD_QUERY.Clientes.cliente_dni = GD2C2020.gd_esquema.Maestra.FAC_CLIENTE_DNI
+                                                              AND GD2C2020.BAD_QUERY.Clientes.cliente_direccion = GD2C2020.gd_esquema.Maestra.FAC_CLIENTE_DIRECCION
+               WHERE FACTURA_NRO IS NOT NULL
+                     AND AUTO_PARTE_CODIGO IS NOT NULL;
+        --
+        -- Datos de compras x autopartes
+        INSERT INTO BAD_QUERY.Compra_X_autoparte
+               SELECT COMPRA_NRO, 
+                      AUTO_PARTE_CODIGO, 
+                      COMPRA_CANT, 
+                      COMPRA_PRECIO
+               FROM GD2C2020.gd_esquema.Maestra
+               WHERE COMPRA_NRO IS NOT NULL
+                     AND AUTO_PARTE_CODIGO IS NOT NULL;
+        --
+        -- Datos de factura x autopartes
+        INSERT INTO BAD_QUERY.Factura_X_autoparte
+               SELECT FACTURA_NRO, 
+                      AUTO_PARTE_CODIGO, 
+                      CANT_FACTURADA, 
+                      PRECIO_FACTURADO
+               FROM GD2C2020.gd_esquema.Maestra
+               WHERE FACTURA_NRO IS NOT NULL
+                     AND AUTO_PARTE_CODIGO IS NOT NULL;
+        --
+        --Habilito los Triggers de logs luego de la migracion
 
--- Datos de tipo caja
-INSERT INTO BAD_QUERY.Tipos_caja
-SELECT DISTINCT TIPO_CAJA_CODIGO, TIPO_CAJA_DESC
-FROM GD2C2020.gd_esquema.Maestra
-WHERE TIPO_CAJA_CODIGO IS NOT NULL
---
-
--- Datos de tipo transmision
-INSERT INTO BAD_QUERY.Tipos_transmision
-SELECT DISTINCT TIPO_TRANSMISION_CODIGO, TIPO_TRANSMISION_DESC
-FROM GD2C2020.gd_esquema.Maestra
-WHERE TIPO_TRANSMISION_CODIGO IS NOT NULL
---
-
--- Datos de tipo motor
-INSERT INTO BAD_QUERY.Tipos_motor
-SELECT DISTINCT TIPO_MOTOR_CODIGO, NULL
-FROM GD2C2020.gd_esquema.Maestra
-WHERE TIPO_TRANSMISION_CODIGO IS NOT NULL
---
-
--- Datos de modelo
-INSERT INTO BAD_QUERY.Modelos
-SELECT DISTINCT MODELO_CODIGO, MODELO_NOMBRE, MODELO_POTENCIA, FABRICANTE_NOMBRE, TIPO_AUTO_CODIGO, TIPO_CAJA_CODIGO, TIPO_TRANSMISION_CODIGO, TIPO_MOTOR_CODIGO
-FROM GD2C2020.gd_esquema.Maestra
-WHERE MODELO_CODIGO IS NOT NULL 
-AND TIPO_AUTO_CODIGO IS NOT NULL
-AND TIPO_CAJA_CODIGO IS NOT NULL
-AND TIPO_TRANSMISION_CODIGO IS NOT NULL
-AND TIPO_MOTOR_CODIGO IS NOT NULL 
---
-
--- Datos de autoparte
-INSERT INTO BAD_QUERY.Autopartes
-SELECT DISTINCT AUTO_PARTE_CODIGO, AUTO_PARTE_DESCRIPCION, MODELO_CODIGO, NULL 
-FROM GD2C2020.gd_esquema.Maestra
-WHERE AUTO_PARTE_CODIGO IS NOT NULL 
---
-
--- Datos de automoviles
-INSERT INTO BAD_QUERY.Automoviles
-SELECT DISTINCT AUTO_NRO_CHASIS, AUTO_NRO_MOTOR, AUTO_PATENTE, AUTO_FECHA_ALTA, AUTO_CANT_KMS, MODELO_CODIGO
-FROM GD2C2020.gd_esquema.Maestra
-WHERE AUTO_PATENTE IS NOT NULL 
---
-
--- Datos de compras automoviles
-INSERT INTO BAD_QUERY.Compras_automoviles
-SELECT DISTINCT COMPRA_NRO, COMPRA_FECHA, COMPRA_PRECIO, sucursal_id, automovil_id, cliente_id
-FROM GD2C2020.gd_esquema.Maestra
-INNER JOIN GD2C2020.BAD_QUERY.Sucursales ON GD2C2020.BAD_QUERY.Sucursales.sucursal_direccion = GD2C2020.gd_esquema.Maestra.SUCURSAL_DIRECCION
-INNER JOIN GD2C2020.BAD_QUERY.Automoviles ON GD2C2020.BAD_QUERY.Automoviles.automovil_patente = GD2C2020.gd_esquema.Maestra.AUTO_PATENTE
-INNER JOIN GD2C2020.BAD_QUERY.Clientes ON GD2C2020.BAD_QUERY.Clientes.cliente_dni = GD2C2020.gd_esquema.Maestra.CLIENTE_DNI
-								  AND GD2C2020.BAD_QUERY.Clientes.cliente_direccion = GD2C2020.gd_esquema.Maestra.CLIENTE_DIRECCION
-WHERE COMPRA_NRO IS NOT NULL 
---
-
--- Datos de facturas automoviles
-INSERT INTO BAD_QUERY.Facturas_automoviles
-SELECT DISTINCT FACTURA_NRO, FACTURA_FECHA, PRECIO_FACTURADO, sucursal_id, automovil_id, cliente_id
-FROM GD2C2020.gd_esquema.Maestra
-INNER JOIN GD2C2020.BAD_QUERY.Sucursales ON GD2C2020.BAD_QUERY.Sucursales.sucursal_direccion = GD2C2020.gd_esquema.Maestra.FAC_SUCURSAL_DIRECCION
-INNER JOIN GD2C2020.BAD_QUERY.Automoviles ON GD2C2020.BAD_QUERY.Automoviles.automovil_patente = GD2C2020.gd_esquema.Maestra.AUTO_PATENTE
-INNER JOIN GD2C2020.BAD_QUERY.Clientes ON GD2C2020.BAD_QUERY.Clientes.cliente_dni = GD2C2020.gd_esquema.Maestra.FAC_CLIENTE_DNI
-								  AND GD2C2020.BAD_QUERY.Clientes.cliente_direccion = GD2C2020.gd_esquema.Maestra.FAC_CLIENTE_DIRECCION
-WHERE FACTURA_NRO IS NOT NULL 
---
-
--- Datos de compras autopartes
-INSERT INTO BAD_QUERY.Compras_autopartes
-SELECT DISTINCT COMPRA_NRO, COMPRA_FECHA, sucursal_id, cliente_id
-FROM GD2C2020.gd_esquema.Maestra
-INNER JOIN GD2C2020.BAD_QUERY.Sucursales ON GD2C2020.BAD_QUERY.Sucursales.sucursal_direccion = GD2C2020.gd_esquema.Maestra.SUCURSAL_DIRECCION
-INNER JOIN GD2C2020.BAD_QUERY.Clientes ON GD2C2020.BAD_QUERY.Clientes.cliente_dni = GD2C2020.gd_esquema.Maestra.CLIENTE_DNI
-								  AND GD2C2020.BAD_QUERY.Clientes.cliente_direccion = GD2C2020.gd_esquema.Maestra.CLIENTE_DIRECCION
-WHERE COMPRA_NRO IS NOT NULL AND AUTO_PARTE_CODIGO IS NOT NULL
---
-
--- Datos de facturas autopartes
-INSERT INTO BAD_QUERY.Facturas_autopartes
-SELECT DISTINCT FACTURA_NRO, FACTURA_FECHA, sucursal_id, cliente_id
-FROM GD2C2020.gd_esquema.Maestra
-INNER JOIN GD2C2020.BAD_QUERY.Sucursales ON GD2C2020.BAD_QUERY.Sucursales.sucursal_direccion = GD2C2020.gd_esquema.Maestra.FAC_SUCURSAL_DIRECCION
-INNER JOIN GD2C2020.BAD_QUERY.Clientes ON GD2C2020.BAD_QUERY.Clientes.cliente_dni = GD2C2020.gd_esquema.Maestra.FAC_CLIENTE_DNI
-								  AND GD2C2020.BAD_QUERY.Clientes.cliente_direccion = GD2C2020.gd_esquema.Maestra.FAC_CLIENTE_DIRECCION
-WHERE FACTURA_NRO IS NOT NULL AND AUTO_PARTE_CODIGO IS NOT NULL
---
-
--- Datos de compras x autopartes
-INSERT INTO BAD_QUERY.Compra_X_autoparte
-SELECT COMPRA_NRO, AUTO_PARTE_CODIGO, COMPRA_CANT, COMPRA_PRECIO
-FROM GD2C2020.gd_esquema.Maestra
-WHERE COMPRA_NRO IS NOT NULL AND AUTO_PARTE_CODIGO IS NOT NULL
---
-
--- Datos de factura x autopartes
-INSERT INTO BAD_QUERY.Factura_X_autoparte
-SELECT FACTURA_NRO, AUTO_PARTE_CODIGO, CANT_FACTURADA, PRECIO_FACTURADO
-FROM GD2C2020.gd_esquema.Maestra
-WHERE FACTURA_NRO IS NOT NULL AND AUTO_PARTE_CODIGO IS NOT NULL
---
-END
+        ENABLE TRIGGER ALL ON BAD_QUERY.Compras_automoviles;
+        ENABLE TRIGGER ALL ON BAD_QUERY.Facturas_automoviles;
+        ENABLE TRIGGER ALL ON BAD_QUERY.Compras_autopartes;
+        ENABLE TRIGGER ALL ON BAD_QUERY.Facturas_autopartes;
+    END;
 GO
-
 /*******************************/
 /*           TRIGGERS          */
 /*******************************/
@@ -571,20 +648,26 @@ BEGIN
 END
 GO
 
-EXECUTE BAD_QUERY.sp_migrar_datos;
-GO
-
-
-/***************************************/
-/*           TRIGGERS POST SP          */
-/***************************************/
-
 CREATE TRIGGER BAD_QUERY.tr_log_nuevas_compras_v2 ON BAD_QUERY.Compras_automoviles AFTER INSERT
 AS
 BEGIN
 	DECLARE @Nro_compra int
-	SET @Nro_compra = (Select compra_automovil_numero from INSERTED)
-	INSERT INTO BAD_QUERY.Logs values (CONCAT('Se ha agregado la compra numero: ',@Nro_compra,' a la tabla de Compras-automoviles'), GETDATE(), SYSTEM_USER)
+
+	DECLARE #micursor CURSOR FOR 
+		Select compra_automovil_numero from INSERTED
+
+	OPEN #micursor  
+	FETCH NEXT FROM #micursor INTO @Nro_compra 
+
+	WHILE @@FETCH_STATUS = 0  
+	BEGIN  
+		INSERT INTO BAD_QUERY.Logs values (CONCAT('Se ha agregado la compra numero: ',@Nro_compra,' a la tabla de Compras-automoviles'), GETDATE(), SYSTEM_USER)
+
+		FETCH NEXT FROM #micursor INTO @Nro_compra 
+	END 
+	CLOSE #micursor
+	DEALLOCATE #micursor
+
 END
 GO
 
@@ -592,8 +675,44 @@ CREATE TRIGGER BAD_QUERY.tr_log_nuevas_ventas_automoviles ON BAD_QUERY.Facturas_
 AS
 BEGIN
 	DECLARE @Nro_factura int
-	SET @Nro_factura = (Select factura_automovil_numero from INSERTED)
-	INSERT INTO BAD_QUERY.Logs values (CONCAT('Se ha agregado la factura numero: ',@Nro_factura, ' a la tabla de Facturas_automoviles'), GETDATE(), SYSTEM_USER)
+
+	DECLARE #micursor CURSOR FOR 
+		Select factura_automovil_numero from INSERTED
+
+	OPEN #micursor  
+	FETCH NEXT FROM #micursor INTO @Nro_factura 
+
+	WHILE @@FETCH_STATUS = 0  
+	BEGIN  
+		INSERT INTO BAD_QUERY.Logs values (CONCAT('Se ha agregado la factura numero: ',@Nro_factura, ' a la tabla de Facturas_automoviles'), GETDATE(), SYSTEM_USER)
+
+		FETCH NEXT FROM #micursor INTO @Nro_factura 
+	END 
+	CLOSE #micursor
+	DEALLOCATE #micursor
+END
+GO
+
+CREATE TRIGGER BAD_QUERY.tr_log_nuevas_compras_autopartes ON BAD_QUERY.Compras_autopartes AFTER INSERT
+AS
+BEGIN
+	DECLARE @Nro_compra int
+
+	DECLARE #micursor CURSOR FOR 
+		Select compra_autopartes_numero from INSERTED
+
+	OPEN #micursor  
+	FETCH NEXT FROM #micursor INTO @Nro_compra 
+
+	WHILE @@FETCH_STATUS = 0  
+	BEGIN  
+		INSERT INTO BAD_QUERY.Logs values (CONCAT('Se ha agregado la compra numero: ',@Nro_compra,' a la tabla de Compras-autopartes'), GETDATE(), SYSTEM_USER)
+
+		FETCH NEXT FROM #micursor INTO @Nro_compra 
+	END 
+	CLOSE #micursor
+	DEALLOCATE #micursor
+
 END
 GO
 
@@ -601,13 +720,31 @@ CREATE TRIGGER BAD_QUERY.tr_log_nuevas_ventas_autopartes ON BAD_QUERY.Facturas_a
 AS
 BEGIN
 	DECLARE @Nro_factura int
-	SET @Nro_factura = (Select factura_autopartes_numero from INSERTED)
-	INSERT INTO BAD_QUERY.Logs values (CONCAT('Se ha agregado la factura numero: ',@Nro_factura, ' a la tabla de Facturas_autopartes'), GETDATE(), SYSTEM_USER)
+
+	DECLARE #micursor CURSOR FOR 
+		Select factura_autopartes_numero from INSERTED
+
+	OPEN #micursor  
+	FETCH NEXT FROM #micursor INTO @Nro_factura
+
+	WHILE @@FETCH_STATUS = 0  
+	BEGIN  
+		INSERT INTO BAD_QUERY.Logs values (CONCAT('Se ha agregado la factura numero: ',@Nro_factura, ' a la tabla de Facturas_autopartes'), GETDATE(), SYSTEM_USER)
+
+		FETCH NEXT FROM #micursor INTO @Nro_factura 
+	END 
+	CLOSE #micursor
+	DEALLOCATE #micursor
 END
 GO
 
 INSERT INTO BAD_QUERY.Facturas_autopartes VALUES (1234567890,null,null,null)
 GO
+
+EXECUTE BAD_QUERY.sp_migrar_datos;
+GO
+
+select * from BAD_QUERY.Logs
 --Pruebas
 /*
 EXECUTE BAD_QUERY.sp_registrar_compra_automovil

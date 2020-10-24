@@ -426,7 +426,7 @@ CREATE PROCEDURE BAD_QUERY.sp_migrar_datos
 AS
     BEGIN
 
-        --Deshabilito los Triggers de logs antes de la migración.
+        --Se deshabilitan los triggers de logs antes de la migración.
 		;
         DISABLE TRIGGER ALL ON BAD_QUERY.Compras_automoviles;
         DISABLE TRIGGER ALL ON BAD_QUERY.Facturas_automoviles;
@@ -460,6 +460,7 @@ AS
                    FROM BAD_QUERY.Clientes
                );
         --
+
         -- Datos de sucursales
         INSERT INTO BAD_QUERY.Sucursales
                SELECT DISTINCT 
@@ -471,12 +472,12 @@ AS
                WHERE SUCURSAL_DIRECCION IS NOT NULL;
 
         -- Esto se usaria para contemplar las sucursales que figuran en una factura pero no en una compra. En la base de datos este caso no se da. 
-/*INSERT INTO BAD_QUERY.Sucursales
-SELECT DISTINCT FAC_SUCURSAL_DIRECCION, FAC_SUCURSAL_CIUDAD, FAC_SUCURSAL_TELEFONO,SUCURSAL_MAIL
-FROM GD2C2020.gd_esquema.Maestra
-WHERE FAC_SUCURSAL_DIRECCION IS NOT NULL AND FAC_SUCURSAL_DIRECCION NOT IN (SELECT sucursal_direccion FROM BAD_QUERY.Sucursales)*/
-
+		/*INSERT INTO BAD_QUERY.Sucursales
+		  SELECT DISTINCT FAC_SUCURSAL_DIRECCION, FAC_SUCURSAL_CIUDAD, FAC_SUCURSAL_TELEFONO,SUCURSAL_MAIL
+		  FROM GD2C2020.gd_esquema.Maestra
+		  WHERE FAC_SUCURSAL_DIRECCION IS NOT NULL AND FAC_SUCURSAL_DIRECCION NOT IN (SELECT sucursal_direccion FROM BAD_QUERY.Sucursales)*/
         --
+
         -- Datos de tipo auto
         INSERT INTO BAD_QUERY.Tipos_auto
                SELECT DISTINCT 
@@ -485,6 +486,7 @@ WHERE FAC_SUCURSAL_DIRECCION IS NOT NULL AND FAC_SUCURSAL_DIRECCION NOT IN (SELE
                FROM GD2C2020.gd_esquema.Maestra
                WHERE TIPO_AUTO_CODIGO IS NOT NULL;
         --
+
         -- Datos de tipo caja
         INSERT INTO BAD_QUERY.Tipos_caja
                SELECT DISTINCT 
@@ -493,6 +495,7 @@ WHERE FAC_SUCURSAL_DIRECCION IS NOT NULL AND FAC_SUCURSAL_DIRECCION NOT IN (SELE
                FROM GD2C2020.gd_esquema.Maestra
                WHERE TIPO_CAJA_CODIGO IS NOT NULL;
         --
+
         -- Datos de tipo transmision
         INSERT INTO BAD_QUERY.Tipos_transmision
                SELECT DISTINCT 
@@ -501,6 +504,7 @@ WHERE FAC_SUCURSAL_DIRECCION IS NOT NULL AND FAC_SUCURSAL_DIRECCION NOT IN (SELE
                FROM GD2C2020.gd_esquema.Maestra
                WHERE TIPO_TRANSMISION_CODIGO IS NOT NULL;
         --
+
         -- Datos de tipo motor
         INSERT INTO BAD_QUERY.Tipos_motor
                SELECT DISTINCT 
@@ -509,6 +513,7 @@ WHERE FAC_SUCURSAL_DIRECCION IS NOT NULL AND FAC_SUCURSAL_DIRECCION NOT IN (SELE
                FROM GD2C2020.gd_esquema.Maestra
                WHERE TIPO_TRANSMISION_CODIGO IS NOT NULL;
         --
+
         -- Datos de modelo
         INSERT INTO BAD_QUERY.Modelos
                SELECT DISTINCT 
@@ -527,6 +532,7 @@ WHERE FAC_SUCURSAL_DIRECCION IS NOT NULL AND FAC_SUCURSAL_DIRECCION NOT IN (SELE
                      AND TIPO_TRANSMISION_CODIGO IS NOT NULL
                      AND TIPO_MOTOR_CODIGO IS NOT NULL; 
         --
+
         -- Datos de autoparte
         INSERT INTO BAD_QUERY.Autopartes
                SELECT DISTINCT 
@@ -537,6 +543,7 @@ WHERE FAC_SUCURSAL_DIRECCION IS NOT NULL AND FAC_SUCURSAL_DIRECCION NOT IN (SELE
                FROM GD2C2020.gd_esquema.Maestra
                WHERE AUTO_PARTE_CODIGO IS NOT NULL; 
         --
+
         -- Datos de automoviles
         INSERT INTO BAD_QUERY.Automoviles
                SELECT DISTINCT 
@@ -549,6 +556,7 @@ WHERE FAC_SUCURSAL_DIRECCION IS NOT NULL AND FAC_SUCURSAL_DIRECCION NOT IN (SELE
                FROM GD2C2020.gd_esquema.Maestra
                WHERE AUTO_PATENTE IS NOT NULL; 
         --
+
         -- Datos de compras automoviles
         INSERT INTO BAD_QUERY.Compras_automoviles
                SELECT DISTINCT 
@@ -565,6 +573,7 @@ WHERE FAC_SUCURSAL_DIRECCION IS NOT NULL AND FAC_SUCURSAL_DIRECCION NOT IN (SELE
                                                               AND GD2C2020.BAD_QUERY.Clientes.cliente_direccion = GD2C2020.gd_esquema.Maestra.CLIENTE_DIRECCION
                WHERE COMPRA_NRO IS NOT NULL; 
         --
+
         -- Datos de facturas automoviles
         INSERT INTO BAD_QUERY.Facturas_automoviles
                SELECT DISTINCT 
@@ -581,6 +590,7 @@ WHERE FAC_SUCURSAL_DIRECCION IS NOT NULL AND FAC_SUCURSAL_DIRECCION NOT IN (SELE
                                                               AND GD2C2020.BAD_QUERY.Clientes.cliente_direccion = GD2C2020.gd_esquema.Maestra.FAC_CLIENTE_DIRECCION
                WHERE FACTURA_NRO IS NOT NULL; 
         --
+
         -- Datos de compras autopartes
         INSERT INTO BAD_QUERY.Compras_autopartes
                SELECT DISTINCT 
@@ -595,6 +605,7 @@ WHERE FAC_SUCURSAL_DIRECCION IS NOT NULL AND FAC_SUCURSAL_DIRECCION NOT IN (SELE
                WHERE COMPRA_NRO IS NOT NULL
                      AND AUTO_PARTE_CODIGO IS NOT NULL;
         --
+
         -- Datos de facturas autopartes
         INSERT INTO BAD_QUERY.Facturas_autopartes
                SELECT DISTINCT 
@@ -609,6 +620,7 @@ WHERE FAC_SUCURSAL_DIRECCION IS NOT NULL AND FAC_SUCURSAL_DIRECCION NOT IN (SELE
                WHERE FACTURA_NRO IS NOT NULL
                      AND AUTO_PARTE_CODIGO IS NOT NULL;
         --
+
         -- Datos de compras x autopartes
         INSERT INTO BAD_QUERY.Compra_X_autoparte
                SELECT COMPRA_NRO, 
@@ -619,6 +631,7 @@ WHERE FAC_SUCURSAL_DIRECCION IS NOT NULL AND FAC_SUCURSAL_DIRECCION NOT IN (SELE
                WHERE COMPRA_NRO IS NOT NULL
                      AND AUTO_PARTE_CODIGO IS NOT NULL;
         --
+
         -- Datos de factura x autopartes
         INSERT INTO BAD_QUERY.Factura_X_autoparte
                SELECT FACTURA_NRO, 
@@ -629,8 +642,8 @@ WHERE FAC_SUCURSAL_DIRECCION IS NOT NULL AND FAC_SUCURSAL_DIRECCION NOT IN (SELE
                WHERE FACTURA_NRO IS NOT NULL
                      AND AUTO_PARTE_CODIGO IS NOT NULL;
         --
-        --Habilito los Triggers de logs luego de la migracion
 
+        --Se habilitan los triggers de logs luego de la migracion
         ENABLE TRIGGER ALL ON BAD_QUERY.Compras_automoviles;
         ENABLE TRIGGER ALL ON BAD_QUERY.Facturas_automoviles;
         ENABLE TRIGGER ALL ON BAD_QUERY.Compras_autopartes;
@@ -644,34 +657,6 @@ GO
 CREATE TRIGGER BAD_QUERY.tr_log_compras_automoviles ON BAD_QUERY.Compras_automoviles AFTER INSERT
 AS
 BEGIN
-	INSERT INTO BAD_QUERY.Logs values ('Se han agregado nuevas compras de automoviles', GETDATE(), SYSTEM_USER)
-END
-GO
-
-CREATE TRIGGER BAD_QUERY.tr_log_ventas_automoviles ON BAD_QUERY.Compras_automoviles AFTER INSERT
-AS
-BEGIN
-	INSERT INTO BAD_QUERY.Logs values ('Se han agregado nuevas ventas de automoviles', GETDATE(), SYSTEM_USER)
-END
-GO
-
-CREATE TRIGGER BAD_QUERY.tr_log_compras_autopartes ON BAD_QUERY.Compras_automoviles AFTER INSERT
-AS
-BEGIN
-	INSERT INTO BAD_QUERY.Logs values ('Se han agregado nuevas compras de autopartes', GETDATE(), SYSTEM_USER)
-END
-GO
-
-CREATE TRIGGER BAD_QUERY.tr_log_ventas_autopartes ON BAD_QUERY.Compras_automoviles AFTER INSERT
-AS
-BEGIN
-	INSERT INTO BAD_QUERY.Logs values ('Se han agregado nuevas ventas de autopartes', GETDATE(), SYSTEM_USER)
-END
-GO
-
-CREATE TRIGGER BAD_QUERY.tr_log_nuevas_compras_v2 ON BAD_QUERY.Compras_automoviles AFTER INSERT
-AS
-BEGIN
 	DECLARE @Nro_compra int
 
 	DECLARE #micursor CURSOR FOR 
@@ -682,7 +667,7 @@ BEGIN
 
 	WHILE @@FETCH_STATUS = 0  
 	BEGIN  
-		INSERT INTO BAD_QUERY.Logs values (CONCAT('Se ha agregado la compra numero: ',@Nro_compra,' a la tabla de Compras-automoviles'), GETDATE(), SYSTEM_USER)
+		INSERT INTO BAD_QUERY.Logs values (CONCAT('Se ha agregado la compra de automovil numero: ', @Nro_compra), GETDATE(), SYSTEM_USER)
 
 		FETCH NEXT FROM #micursor INTO @Nro_compra 
 	END 
@@ -692,7 +677,7 @@ BEGIN
 END
 GO
 
-CREATE TRIGGER BAD_QUERY.tr_log_nuevas_ventas_automoviles ON BAD_QUERY.Facturas_automoviles AFTER INSERT
+CREATE TRIGGER BAD_QUERY.tr_log_ventas_automoviles ON BAD_QUERY.Facturas_automoviles AFTER INSERT
 AS
 BEGIN
 	DECLARE @Nro_factura int
@@ -705,7 +690,7 @@ BEGIN
 
 	WHILE @@FETCH_STATUS = 0  
 	BEGIN  
-		INSERT INTO BAD_QUERY.Logs values (CONCAT('Se ha agregado la factura numero: ',@Nro_factura, ' a la tabla de Facturas_automoviles'), GETDATE(), SYSTEM_USER)
+		INSERT INTO BAD_QUERY.Logs values (CONCAT('Se ha agregado la factura de automovil numero: ', @Nro_factura), GETDATE(), SYSTEM_USER)
 
 		FETCH NEXT FROM #micursor INTO @Nro_factura 
 	END 
@@ -714,7 +699,7 @@ BEGIN
 END
 GO
 
-CREATE TRIGGER BAD_QUERY.tr_log_nuevas_compras_autopartes ON BAD_QUERY.Compras_autopartes AFTER INSERT
+CREATE TRIGGER BAD_QUERY.tr_log_compras_autopartes ON BAD_QUERY.Compras_autopartes AFTER INSERT
 AS
 BEGIN
 	DECLARE @Nro_compra int
@@ -727,7 +712,7 @@ BEGIN
 
 	WHILE @@FETCH_STATUS = 0  
 	BEGIN  
-		INSERT INTO BAD_QUERY.Logs values (CONCAT('Se ha agregado la compra numero: ',@Nro_compra,' a la tabla de Compras-autopartes'), GETDATE(), SYSTEM_USER)
+		INSERT INTO BAD_QUERY.Logs values (CONCAT('Se ha agregado la compra de autopartes numero: ', @Nro_compra), GETDATE(), SYSTEM_USER)
 
 		FETCH NEXT FROM #micursor INTO @Nro_compra 
 	END 
@@ -737,7 +722,7 @@ BEGIN
 END
 GO
 
-CREATE TRIGGER BAD_QUERY.tr_log_nuevas_ventas_autopartes ON BAD_QUERY.Facturas_autopartes AFTER INSERT
+CREATE TRIGGER BAD_QUERY.tr_log_ventas_autopartes ON BAD_QUERY.Facturas_autopartes AFTER INSERT
 AS
 BEGIN
 	DECLARE @Nro_factura int
@@ -750,7 +735,7 @@ BEGIN
 
 	WHILE @@FETCH_STATUS = 0  
 	BEGIN  
-		INSERT INTO BAD_QUERY.Logs values (CONCAT('Se ha agregado la factura numero: ',@Nro_factura, ' a la tabla de Facturas_autopartes'), GETDATE(), SYSTEM_USER)
+		INSERT INTO BAD_QUERY.Logs values (CONCAT('Se ha agregado la factura de autopartes numero: ', @Nro_factura), GETDATE(), SYSTEM_USER)
 
 		FETCH NEXT FROM #micursor INTO @Nro_factura 
 	END 
@@ -759,26 +744,12 @@ BEGIN
 END
 GO
 
-INSERT INTO BAD_QUERY.Facturas_autopartes VALUES (1234567890,null,null,null)
-GO
+
+/*******************************/
+/*          MIGRACIÓN          */
+/*******************************/
 
 EXECUTE BAD_QUERY.sp_migrar_datos;
 GO
-
-select * from BAD_QUERY.Logs
---Pruebas
-/*
-EXECUTE BAD_QUERY.sp_registrar_compra_automovil
-@id_sucursal=2,
-@nro_chasis='QWERTY',
-@nro_motor='92195192', 
-@patente='AQWE-214', 
-@kilometraje=1234, 
-@modelo=15,
-@numero_compra=12345678,
-@fecha_alta = '2018-06-18 00:00:00.000',
-@precio_automovil=250000
-GO*/
-
 
 

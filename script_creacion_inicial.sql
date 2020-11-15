@@ -354,10 +354,11 @@ CREATE PROCEDURE BAD_QUERY.sp_registrar_venta_automovil
 @numero_factura decimal(18,0)
 AS
 BEGIN
-    DECLARE @precio_automovil decimal(18,0) = BAD_QUERY.f_precio_venta((SELECT compra_automovil_precio FROM BAD_QUERY.Compras_automoviles WHERE compra_automovil_automovil = @id_automovil))
-
 	BEGIN TRANSACTION
 	BEGIN TRY
+
+        DECLARE @precio_automovil decimal(18,0) = BAD_QUERY.f_precio_venta((SELECT compra_automovil_precio FROM BAD_QUERY.Compras_automoviles WHERE compra_automovil_automovil = @id_automovil))
+	
 		INSERT INTO BAD_QUERY.Facturas_automoviles(factura_automovil_numero, factura_automovil_fecha, factura_automovil_precio, factura_automovil_sucursal,
 		factura_automovil_automovil)
 		values(@numero_factura, GETDATE(), @precio_automovil, @id_sucursal, @id_automovil)

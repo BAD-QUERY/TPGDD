@@ -1,2 +1,196 @@
-USE GD2C2020
+USE BI
+GO
 
+IF OBJECT_ID('operaciones_autopartes', 'U') IS NOT NULL 
+  DROP TABLE operaciones_autopartes;
+IF OBJECT_ID('operaciones_automoviles', 'U') IS NOT NULL 
+  DROP TABLE operaciones_automoviles;
+IF OBJECT_ID('fechas_operaciones', 'U') IS NOT NULL 
+  DROP TABLE fechas_operaciones;
+IF OBJECT_ID('clientes', 'U') IS NOT NULL 
+  DROP TABLE clientes;
+IF OBJECT_ID('sucursales', 'U') IS NOT NULL 
+  DROP TABLE sucursales;
+IF OBJECT_ID('autopartes', 'U') IS NOT NULL 
+  DROP TABLE autopartes;
+IF OBJECT_ID('automoviles', 'U') IS NOT NULL 
+  DROP TABLE automoviles;
+
+
+CREATE TABLE operaciones_autopartes(
+	operacion_cliente INT,
+	operacion_tipo VARCHAR(255), /*¿Aca que ponemos? ¿'COMPRA' y 'VENTA'?*/
+	operacion_autoparte DECIMAL(18,0),	
+	operacion_fecha DATETIME2(3),
+	operacion_sucursal INT,
+	operacion_monto DECIMAL(18,2),
+
+	PRIMARY KEY(operacion_cliente,operacion_tipo,operacion_autoparte,operacion_fecha,operacion_sucursal)
+)
+
+CREATE TABLE operaciones_automoviles(
+	operacion_cliente INT,
+	operacion_tipo VARCHAR(255), /*¿Aca que ponemos? ¿'COMPRA' y 'VENTA'?*/
+	operacion_automovil INT,	
+	operacion_fecha DATETIME2(3),
+	operacion_sucursal INT,
+	operacion_monto DECIMAL(18,2),
+
+	PRIMARY KEY(operacion_cliente,operacion_tipo,operacion_automovil,operacion_fecha,operacion_sucursal)
+)
+
+CREATE TABLE fechas_operaciones(
+	fecha_codigo INT,
+	fecha_numero_mes INT,
+	fecha_descripcion_mes NVARCHAR(255),
+	fecha_numero_anio INT,
+
+	PRIMARY KEY(fecha_codigo)
+)
+
+CREATE TABLE clientes(
+	cliente_id INT,
+	cliente_sexo NVARCHAR(255), /*Quedaria en NULL porque no tenemos info del sexo en el modelo*/
+	/*cod_rango_etario INT, Tiene sentido ponerle un codigo?*/
+	cliente_rango_etario NVARCHAR(255), /*Lo ponemos como un string?*/
+
+	PRIMARY KEY(cliente_id)
+)
+
+CREATE TABLE sucursales(
+	sucursal_id INT,
+	sucursal_direccion NVARCHAR(255),
+	sucursal_ciudad NVARCHAR(255),
+	sucursal_telefono DECIMAL(18,0),
+	sucursal_mail NVARCHAR(255)
+
+	PRIMARY KEY(sucursal_id)
+)
+
+CREATE TABLE autopartes(
+	autoparte_codigo DECIMAL(18,0),
+	autoparte_descripcion NVARCHAR(255),
+	autoparte_fabricante NVARCHAR(255),
+	autoparte_rubro NVARCHAR(255),
+
+	PRIMARY KEY(autoparte_codigo)
+)
+
+CREATE TABLE automoviles(
+	automovil_id INT,
+	automovil_modelo DECIMAL(18,0),
+	automovil_fabricante NVARCHAR(255),
+	automovil_tipo_auto NVARCHAR(255), /*¿Aca ponemos directamente la descripcion no? Mucho no nos dice el ID*/
+	automovil_tipo_caja NVARCHAR(255),
+	automovil_tipo_motor NVARCHAR(255),
+	automovil_tipo_transmision NVARCHAR(255),
+	automovil_potencia DECIMAL(18,0), /*¿Vale la pena ponerle un codigo como esta en el DER? En realidad seria un rango mas que un decimal, ¿un string?*/
+
+	automovil_cantidad_cambios INT, /*Este campo va a estar en NULL porque no tenemos esta info en el modelo relacional*/
+		
+	PRIMARY KEY(automovil_id)
+
+)
+GO
+
+
+							/* CLIENTES */
+/*-------------------------------------------------------------------------*/
+CREATE FUNCTION f_calcular_rango_etario(@fecha_nacimiento DATETIME2)
+RETURNS NVARCHAR(255)
+AS
+BEGIN
+	IF(DATEDIFF(YEAR, @fecha_nacimiento, GETDATE()) BETWEEN 18 AND 30)
+	BEGIN
+		RETURN '18-30'
+	END 
+	IF(DATEDIFF(YEAR, @fecha_nacimiento, GETDATE()) BETWEEN 31 AND 50)
+	BEGIN
+		RETURN '31-50'
+	END
+	IF(DATEDIFF(YEAR, @fecha_nacimiento, GETDATE()) > 50)
+	BEGIN
+		RETURN '>50'
+	END
+
+	RETURN NULL
+END
+GO
+
+INSERT INTO clientes 
+SELECT cliente_id, NULL, f_calcular_rango_etario(cliente_fecha_nacimiento)
+FROM GD2C2020.BAD_QUERY.Clientes
+
+/*-------------------------------------------------------------------------*/
+
+
+							/* SUCURSALES */
+/*-------------------------------------------------------------------------*/
+INSERT INTO sucursales 
+SELECT * FROM GD2C2020.BAD_QUERY.Sucursales
+/*-------------------------------------------------------------------------*/
+
+
+							/* AUTOPARTES */
+/*-------------------------------------------------------------------------*/
+INSERT INTO autopartes 
+SELECT autoparte_codigo, autoparte_descripcion, modelo_fabricante, autoparte_categoria FROM GD2C2020.BAD_QUERY.Autopartes
+INNER JOIN GD2C2020.BAD_QUERY.Modelos ON modelo_codigo=autoparte_modelo_auto
+GO
+/*-------------------------------------------------------------------------*/
+
+							/* AUTOMOVILES */
+/*-------------------------------------------------------------------------*/
+
+CREATE FUNCTION f_calcular_rango_potencia(@potencia decimal(18,0))
+RETURNS NVARCHAR(255)
+AS
+BEGIN
+	IF(@potencia BETWEEN 50 AND 150)
+	BEGIN
+		RETURN '50-150cv'
+	END 
+	IF(@potencia BETWEEN 151 AND 300)
+	BEGIN
+		RETURN '151-300cv'
+	END
+	IF(@potencia > 300)
+	BEGIN
+		RETURN '>300cv'
+	END
+
+	RETURN NULL
+END
+GO
+
+INSERT INTO automoviles 
+SELECT automovil_id, modelo_nombre, modelo_fabricante, tipo_auto_descripcion,tipo_caja_descripcion,
+tipo_motor_descripcion,tipo_transmision_descripcion, f_calcular_rango_potencia(modelo_potencia), NULL
+FROM GD2C2020.BAD_QUERY.Automoviles
+INNER JOIN GD2C2020.BAD_QUERY.Modelos ON modelo_codigo=automovil_modelo
+INNER JOIN GD2C2020.BAD_QUERY.Tipos_auto ON modelo_tipo_auto=tipo_auto_codigo
+INNER JOIN GD2C2020.BAD_QUERY.Tipos_caja ON modelo_tipo_caja=tipo_caja_codigo
+INNER JOIN GD2C2020.BAD_QUERY.Tipos_motor ON modelo_tipo_motor=tipo_motor_codigo
+INNER JOIN GD2C2020.BAD_QUERY.Tipos_transmision ON modelo_tipo_transmision=tipo_transmision_codigo
+
+/*-------------------------------------------------------------------------*/
+
+
+
+							/* FECHAS OPERACIONES */
+/*-------------------------------------------------------------------------*/
+/*-------------------------------------------------------------------------*/
+
+
+
+
+/*VISTAS*/
+
+/*Cantidad de automoviles vendidos y comprados por sucursal y mes*/
+/*
+CREATE VIEW vw_automoviles_vendidos_y_comprados AS
+SELECT sucursal_direccion, fecha_descripcion_mes
+FROM operaciones_automoviles 
+INNER JOIN sucursales ON sucursal_id=operacion_sucursal
+INNER JOIN fechas_operaciones ON operacion_fecha = fecha_codigo
+*/

@@ -26,7 +26,7 @@ IF EXISTS(SELECT name FROM sys.objects WHERE type_desc LIKE '%fun%' AND name LIK
 IF EXISTS(SELECT name FROM sys.objects WHERE type_desc LIKE '%fun%' AND name LIKE 'BI_f_stock_al_anio')
   DROP FUNCTION BAD_QUERY.BI_f_stock_al_anio
 IF EXISTS(SELECT name FROM sys.objects WHERE type_desc LIKE '%fun%' AND name LIKE 'BI_f_stock_al_mes')
-  DROP FUNCTION BAD_QUERY.BI_f_stock_al_anio
+  DROP FUNCTION BAD_QUERY.BI_f_stock_al_mes
 IF OBJECT_ID('BAD_QUERY.BI_vw_automoviles_vendidos_y_comprados_por_mes', 'V') IS NOT NULL 
   DROP VIEW BAD_QUERY.BI_vw_automoviles_vendidos_y_comprados_por_mes;
 IF OBJECT_ID('BAD_QUERY.BI_vw_automoviles_vendidos_y_comprados_por_mes_y_anio', 'V') IS NOT NULL 

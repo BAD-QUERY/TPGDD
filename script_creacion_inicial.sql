@@ -71,6 +71,7 @@ IF EXISTS (SELECT name FROM sys.schemas WHERE name LIKE 'BAD_QUERY')
 	DROP SCHEMA BAD_QUERY
 GO
 
+-- Creacion del esquema solicitado
 CREATE SCHEMA BAD_QUERY
 GO
 
@@ -95,7 +96,6 @@ CREATE TABLE BAD_QUERY.Sucursales (
 	sucursal_telefono decimal(18,0),
 	sucursal_mail nvarchar(255)
 ) 
-
 
 CREATE TABLE BAD_QUERY.Tipos_auto (
 	tipo_auto_codigo decimal(18,0) PRIMARY KEY,
@@ -128,7 +128,6 @@ CREATE TABLE BAD_QUERY.Modelos (
 	modelo_tipo_motor decimal(18,0) FOREIGN KEY REFERENCES BAD_QUERY.Tipos_motor(tipo_motor_codigo)
 ) 
 
-
 CREATE TABLE BAD_QUERY.Automoviles (
 	automovil_id int IDENTITY PRIMARY KEY,
 	automovil_numero_chasis nvarchar(50),
@@ -139,14 +138,12 @@ CREATE TABLE BAD_QUERY.Automoviles (
 	automovil_modelo decimal(18,0) FOREIGN KEY REFERENCES BAD_QUERY.Modelos(modelo_codigo)
 )
 
-
 CREATE TABLE BAD_QUERY.Autopartes(
 	autoparte_codigo decimal(18,0) PRIMARY KEY,
 	autoparte_descripcion nvarchar(255),
 	autoparte_modelo_auto decimal(18,0) FOREIGN KEY REFERENCES BAD_QUERY.Modelos(modelo_codigo),
 	autoparte_categoria nvarchar(255),
 )
-
 
 CREATE TABLE BAD_QUERY.Compras_autopartes(
    compra_autopartes_numero decimal(18,0) PRIMARY KEY,
@@ -371,7 +368,6 @@ BEGIN
 
 END
 GO
-
 
 CREATE PROCEDURE BAD_QUERY.sp_registrar_compra_autoparte
 @codigo_autoparte DECIMAL(18,0),

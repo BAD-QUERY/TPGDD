@@ -25,6 +25,8 @@ IF EXISTS(SELECT name FROM sys.objects WHERE type_desc LIKE '%fun%' AND name LIK
   DROP FUNCTION BAD_QUERY.BI_f_calcular_rango_potencia
 IF EXISTS(SELECT name FROM sys.objects WHERE type_desc LIKE '%fun%' AND name LIKE 'BI_f_stock_al_anio')
   DROP FUNCTION BAD_QUERY.BI_f_stock_al_anio
+IF EXISTS(SELECT name FROM sys.objects WHERE type_desc LIKE '%fun%' AND name LIKE 'BI_f_stock_al_mes')
+  DROP FUNCTION BAD_QUERY.BI_f_stock_al_anio
 IF OBJECT_ID('BAD_QUERY.BI_vw_automoviles_vendidos_y_comprados_por_mes', 'V') IS NOT NULL 
   DROP VIEW BAD_QUERY.BI_vw_automoviles_vendidos_y_comprados_por_mes;
 IF OBJECT_ID('BAD_QUERY.BI_vw_automoviles_vendidos_y_comprados_por_mes_y_anio', 'V') IS NOT NULL 
@@ -45,8 +47,11 @@ IF OBJECT_ID('BAD_QUERY.BI_vw_ganancias_de_autopartes_por_sucursal_por_mes', 'V'
   DROP VIEW BAD_QUERY.BI_vw_ganancias_de_autopartes_por_sucursal_por_mes;
 IF OBJECT_ID('BAD_QUERY.BI_vw_ganancias_de_autopartes_por_sucursal_por_mes_y_anio', 'V') IS NOT NULL 
   DROP VIEW BAD_QUERY.BI_vw_ganancias_de_autopartes_por_sucursal_por_mes_y_anio;
+IF OBJECT_ID('BAD_QUERY.BI_vw_stock_final_anual_por_sucursal', 'V') IS NOT NULL 
+  DROP VIEW BAD_QUERY.BI_vw_stock_final_anual_por_sucursal;
 IF OBJECT_ID('BAD_QUERY.BI_vw_maximo_stock_anual_por_sucursal', 'V') IS NOT NULL 
   DROP VIEW BAD_QUERY.BI_vw_maximo_stock_anual_por_sucursal;
+
 
 /*******************************/
 /*      CREACIÓN DE TABLAS     */
@@ -418,13 +423,39 @@ BEGIN
 END
 GO
 
-CREATE VIEW BAD_QUERY.BI_vw_maximo_stock_anual_por_sucursal AS
+CREATE VIEW BAD_QUERY.BI_vw_stock_final_anual_por_sucursal AS
 SELECT sucursal_direccion AS Sucursal, fecha_numero_anio AS Año, 
 BAD_QUERY.BI_f_stock_al_anio(fecha_numero_anio,operacion_sucursal) AS Stock
 FROM BAD_QUERY.BI_operaciones_autopartes
 INNER JOIN BAD_QUERY.BI_fechas_operaciones ON operacion_fecha = fecha_codigo
 INNER JOIN BAD_QUERY.BI_sucursales ON sucursal_id=operacion_sucursal
 GROUP BY sucursal_direccion,operacion_sucursal, fecha_numero_anio
+GO
+
+
+CREATE FUNCTION BAD_QUERY.BI_f_stock_al_mes(@anio INT, @mes INT, @sucursal INT)
+RETURNS INT
+AS
+BEGIN
+	RETURN(
+		SELECT 
+		SUM(CASE operacion_tipo WHEN 'COMPRA' THEN operacion_cantidad ELSE 0 END)-SUM(CASE operacion_tipo WHEN 'VENTA' THEN operacion_cantidad ELSE 0 END)
+		FROM BAD_QUERY.BI_operaciones_autopartes 
+		INNER JOIN BAD_QUERY.BI_fechas_operaciones ON operacion_fecha = fecha_codigo
+		WHERE operacion_sucursal=@sucursal 
+		AND fecha_numero_anio*12 + fecha_numero_mes <= @anio*12 + @mes
+	)
+END
+GO
+
+
+CREATE VIEW BAD_QUERY.BI_vw_maximo_stock_anual_por_sucursal AS
+SELECT DISTINCT sucursal_direccion AS Sucursal, fecha_numero_anio AS Año,
+MAX(BAD_QUERY.BI_f_stock_al_mes(fecha_numero_anio, fecha_numero_mes, operacion_sucursal)) OVER(PARTITION BY sucursal_direccion, fecha_numero_anio) AS Stock
+FROM BAD_QUERY.BI_operaciones_autopartes
+INNER JOIN BAD_QUERY.BI_fechas_operaciones ON operacion_fecha = fecha_codigo
+INNER JOIN BAD_QUERY.BI_sucursales ON sucursal_id=operacion_sucursal
+GROUP BY sucursal_direccion,operacion_sucursal, fecha_numero_anio, fecha_numero_mes
 /*-------------------------------------------------------------------------*/
 
 

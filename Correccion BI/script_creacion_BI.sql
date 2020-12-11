@@ -448,8 +448,6 @@ GO
 
 
 
-
-
 /*******************************/
 /*            VISTAS           */
 /*******************************/
@@ -502,7 +500,6 @@ GO
 /*-------------------------------------------------------------------------*/
 
 
-
 /*Cantidad de automoviles vendidos y comprados por sucursal y mes*/
 /*-------------------------------------------------------------------------*/
 
@@ -537,7 +534,6 @@ FROM BAD_QUERY.BI_vw_automoviles_vendidos_y_comprados
 GO
 /*-------------------------------------------------------------------------*/
 
-
 /*Ganancias (precio de venta – precio de compra) x Sucursal x mes por ventas de automoviles*/
 /*-------------------------------------------------------------------------*/
 CREATE VIEW BAD_QUERY.BI_vw_ganancias_de_automoviles_por_sucursal_por_mes AS
@@ -561,7 +557,6 @@ GROUP BY sucursal_id, sucursal_direccion,  fecha_numero_mes, fecha_descripcion_m
 GO
 /*-------------------------------------------------------------------------*/
 
-
 /*Promedio de tiempo en stock de cada modelo de automóvil.*/
 /*-------------------------------------------------------------------------*/
 CREATE VIEW BAD_QUERY.BI_vw_promedio_stock_modelo AS
@@ -583,7 +578,6 @@ GROUP BY Modelo
 GO
 /*-------------------------------------------------------------------------*/
 
-
 /*Precio promedio de cada autoparte, vendida y comprada.*/
 /*-------------------------------------------------------------------------*/
 CREATE VIEW BAD_QUERY.BI_vw_precio_promedio_por_autoparte AS
@@ -595,15 +589,13 @@ FROM BAD_QUERY.BI_vw_autopartes_vendidas_y_compradas
 GROUP BY operacion_autoparte
 GO
 
-
 CREATE VIEW BAD_QUERY.BI_vw_precio_promedio_global_de_autopartes AS
 SELECT
-AVG(CASE operacion_tipo WHEN 'COMPRA' THEN operacion_monto_unitario ELSE NULL END) AS [Precio promedio de autopartes compradas],
-AVG(CASE operacion_tipo WHEN 'VENTA' THEN operacion_monto_unitario ELSE NULL END) AS [Precio promedio de autopartes vendidas]
+AVG(CASE operacion_tipo WHEN 'Compra' THEN operacion_monto_unitario ELSE NULL END) AS [Precio promedio de autopartes compradas],
+AVG(CASE operacion_tipo WHEN 'Venta' THEN operacion_monto_unitario ELSE NULL END) AS [Precio promedio de autopartes vendidas]
 FROM BAD_QUERY.BI_vw_autopartes_vendidas_y_compradas
 GO
 /*-------------------------------------------------------------------------*/
-
 
 /*Ganancias (precio de venta – precio de compra) x Sucursal x mes por ventas de autopartes*/
 /*-------------------------------------------------------------------------*/
@@ -619,7 +611,7 @@ GO
 
 CREATE VIEW BAD_QUERY.BI_vw_ganancias_de_autopartes_por_sucursal_por_mes_y_anio AS
 SELECT sucursal_direccion AS [Dirección de la sucursal], fecha_descripcion_mes AS [Mes], fecha_numero_anio AS [Año],
-(SUM(CASE operacion_tipo WHEN 'VENTA' THEN (operacion_monto_unitario*operacion_cantidad) ELSE 0 END) - SUM(CASE operacion_tipo WHEN 'COMPRA' THEN (operacion_monto_unitario*operacion_cantidad) ELSE 0 END))
+(SUM(CASE operacion_tipo WHEN 'Venta' THEN (operacion_monto_unitario*operacion_cantidad) ELSE 0 END) - SUM(CASE operacion_tipo WHEN 'Compra' THEN (operacion_monto_unitario*operacion_cantidad) ELSE 0 END))
 AS [Ganancias por autopartes]
 FROM BAD_QUERY.BI_vw_autopartes_vendidas_y_compradas
 INNER JOIN BAD_QUERY.BI_sucursales ON sucursal_id=operacion_sucursal
@@ -627,7 +619,6 @@ INNER JOIN BAD_QUERY.BI_fechas ON operacion_fecha = fecha_id
 GROUP BY sucursal_direccion, fecha_descripcion_mes, fecha_numero_anio
 GO
 /*-------------------------------------------------------------------------*/
-
 
 /*Máxima cantidad de stock de autopartes por cada sucursal (anual)*/
 /*-------------------------------------------------------------------------*/
@@ -655,14 +646,13 @@ INNER JOIN BAD_QUERY.BI_sucursales ON sucursal_id=operacion_sucursal
 GROUP BY sucursal_direccion,operacion_sucursal, fecha_numero_anio
 GO
 
-
 CREATE FUNCTION BAD_QUERY.BI_f_stock_al_mes(@anio INT, @mes INT, @sucursal INT)
 RETURNS INT
 AS
 BEGIN
 	RETURN(
 		SELECT 
-		SUM(CASE operacion_tipo WHEN 'COMPRA' THEN operacion_cantidad ELSE 0 END)-SUM(CASE operacion_tipo WHEN 'VENTA' THEN operacion_cantidad ELSE 0 END)
+		SUM(CASE operacion_tipo WHEN 'Compra' THEN operacion_cantidad ELSE 0 END)-SUM(CASE operacion_tipo WHEN 'Venta' THEN operacion_cantidad ELSE 0 END)
 		FROM BAD_QUERY.BI_vw_autopartes_vendidas_y_compradas
 		INNER JOIN BAD_QUERY.BI_fechas ON operacion_fecha = fecha_id
 		WHERE operacion_sucursal=@sucursal 
@@ -670,7 +660,6 @@ BEGIN
 	)
 END
 GO
-
 
 CREATE VIEW BAD_QUERY.BI_vw_maximo_stock_anual_por_sucursal AS
 SELECT DISTINCT sucursal_direccion AS Sucursal, fecha_numero_anio AS Año,
